@@ -45,10 +45,8 @@
     "toolbox",
     "distrobox",
 
-    // Flatpak support + GUI store
+    // Flatpak base
     "flatpak",
-    "gnome-software",
-    "gnome-software-plugin-flatpak",
 
     // Networking/system
     "curl",
@@ -63,7 +61,10 @@
     "tailscale",
     "nfs-utils",
     "mosh",
-    "wireguard-tools"
+    "wireguard-tools",
+
+    // Login manager
+    "ly"
   ],
   "default-target": "graphical.target",
   "postprocess": [
@@ -74,18 +75,35 @@
         "flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo",
 
         // Core Flatpaks
+        "flatpak install -y flathub io.github.kolunmi.Bazaar",
+        "flatpak install -y flathub io.github.flattool.Warehouse",
+        "flatpak install -y flathub io.github.zaedus.spider",
+
+        "flatpak install -y flathub org.mozilla.firefox",
+        "flatpak install -y flathub org.gnome.Epiphany",
         "flatpak install -y flathub org.chromium.Chromium",
+
         "flatpak install -y flathub dev.zed.Zed",
         "flatpak install -y flathub com.visualstudio.code",
         "flatpak install -y flathub io.loft.DevPod",
 
         // Flatpak overrides: Wayland, GPU, home
+        "curl -L -o /tmp/flow-browser.flatpak https://github.com/MultiboxLabs/flow-browser/releases/download/v0.8.3/flow-browser-0.8.3-x86_64.flatpak",
+        "flatpak install -y /tmp/flow-browser.flatpak",
+        "rm /tmp/flow-browser.flatpak",
+
+        "flatpak override --user --socket=wayland --device=dri --filesystem=home io.github.kolunmi.Bazaar",
+        "flatpak override --user --socket=wayland --device=dri --filesystem=home io.github.flattool.Warehouse",
+        "flatpak override --user --socket=wayland --device=dri --filesystem=home io.github.zaedus.spider",
+        "flatpak override --user --socket=wayland --device=dri --filesystem=home org.mozilla.firefox",
+        "flatpak override --user --socket=wayland --device=dri --filesystem=home org.gnome.Epiphany",
         "flatpak override --user --socket=wayland --device=dri --filesystem=home org.chromium.Chromium",
         "flatpak override --user --socket=wayland --device=dri --filesystem=home dev.zed.Zed",
         "flatpak override --user --socket=wayland --device=dri --filesystem=home com.visualstudio.code",
         "flatpak override --user --socket=wayland --device=dri --filesystem=home io.loft.DevPod",
+        "flatpak override --user --socket=wayland --device=dri --filesystem=home org.flow_browser.Flow",
 
-        // CLI symlinks for Flatpaks
+        "install -d /usr/local/bin",
         "ln -sf /var/lib/flatpak/exports/bin/dev.zed.Zed /usr/local/bin/zed",
         "ln -sf /var/lib/flatpak/exports/bin/com.visualstudio.code /usr/local/bin/code",
         "ln -sf /var/lib/flatpak/exports/bin/io.loft.DevPod /usr/local/bin/devpod",
@@ -115,15 +133,12 @@
         "cat <<'EOF' > /usr/local/bin/update-tools.sh",
         "#!/usr/bin/env bash",
         "set -euxo pipefail",
-        "# Update Rust",
-        "$HOME/.cargo/bin/rustup update || true",
-        "# Update cargo-binstalled CLIs",
-        "$HOME/.cargo/bin/cargo install-update -a || true",
-        "# Update Python via uv",
-        "$HOME/.local/bin/uv python install latest && $HOME/.local/bin/uv python pin latest || true",
-        "# Update Node.js + Volta-managed tools",
-        "$HOME/.volta/bin/volta install node@latest || true",
-        "$HOME/.volta/bin/volta install npm-check-updates eslint prettier typescript ts-node vite vitest jest nodemon http-server || true",
+        "export PATH=\"$HOME/.cargo/bin:$HOME/.local/bin:$HOME/.volta/bin:$PATH\"",
+        "rustup update || true",
+        "cargo install-update -a || true",
+        "uv python install latest && uv python pin latest || true",
+        "volta install node@latest || true",
+        "volta install npm-check-updates eslint prettier typescript ts-node vite vitest jest nodemon http-server || true",
         "EOF",
         "chmod +x /usr/local/bin/update-tools.sh",
 
@@ -150,32 +165,57 @@
         "WantedBy=timers.target",
         "EOF",
 
-        // systemd service for rpm-ostree upgrade
-        "cat <<'EOF' > /etc/systemd/system/ostree-upgrade.service",
+        // rpm-ostree check only
+        "install -d /var/lib/chelipeds",
+
+        "cat <<'EOF' > /usr/local/bin/check-ostree-updates.sh",
+        "#!/usr/bin/env bash",
+        "set -euo pipefail",
+        "mkdir -p /var/lib/chelipeds",
+        "rm -f /var/lib/chelipeds/updates-available || true",
+        "OUT=$(rpm-ostree upgrade --check || true)",
+        "printf '%s\\n' \"$OUT\" > /var/lib/chelipeds/upgrade-check.txt",
+        "if echo \"$OUT\" | grep -qi 'AvailableUpdate\\|available update\\|Updates available'; then",
+        "  touch /var/lib/chelipeds/updates-available",
+        "fi",
+        "EOF",
+        "chmod +x /usr/local/bin/check-ostree-updates.sh",
+
+        // Expose CHELIPEDS_UPDATES_AVAILABLE
+        "cat <<'EOF' > /etc/profile.d/chelipeds-updates.sh",
+        "if [ -f /var/lib/chelipeds/updates-available ]; then",
+        "  export CHELIPEDS_UPDATES_AVAILABLE=1",
+        "else",
+        "  export CHELIPEDS_UPDATES_AVAILABLE=0",
+        "fi",
+        "EOF",
+
+        // systemd service + timer for update-check
+        "cat <<'EOF' > /etc/systemd/system/chelipeds-update-check.service",
         "[Unit]",
-        "Description=Upgrade system with rpm-ostree",
+        "Description=Check for rpm-ostree updates and set flag",
         "",
         "[Service]",
         "Type=oneshot",
-        "ExecStart=/usr/bin/rpm-ostree upgrade --allow-inactive",
+        "ExecStart=/usr/local/bin/check-ostree-updates.sh",
         "EOF",
 
-        // systemd timer for rpm-ostree upgrade (daily 03:15)
-        "cat <<'EOF' > /etc/systemd/system/ostree-upgrade.timer",
+        "cat <<'EOF' > /etc/systemd/system/chelipeds-update-check.timer",
         "[Unit]",
-        "Description=Run rpm-ostree upgrade daily at 03:15",
+        "Description=Check for rpm-ostree updates every 15 minutes (sets CHELIPEDS_UPDATES_AVAILABLE)",
         "",
         "[Timer]",
-        "OnCalendar=*-*-* 03:15:00",
+        "OnCalendar=*:0/15",
         "Persistent=true",
         "",
         "[Install]",
         "WantedBy=timers.target",
         "EOF",
 
-        // Enable the timers
+        // Enable timers + login manager
         "systemctl enable update-tools.timer",
-        "systemctl enable ostree-upgrade.timer"
+        "systemctl enable chelipeds-update-check.timer",
+        "systemctl enable ly.service"
       ]
     }
   ]
