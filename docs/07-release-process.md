@@ -1,0 +1,3 @@
+- **ISOs**: Published on GitHub Releases.
+- **Ignition generator**: Client-side web tool to customize username + SSH keys.
+- **Updates**: Delivered through rpm-ostree rebases.

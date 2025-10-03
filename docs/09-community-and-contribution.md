@@ -1,0 +1,4 @@
+- **Issues**: GitHub tracker for bugs & requests.
+- **Docs**: All documentation in Markdown, contributions via PR.
+- **Support**: Community Matrix/Discord space.
+- **Contribution guide**: Fork → feature branch → PR with description.
