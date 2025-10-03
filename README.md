@@ -1,6 +1,6 @@
 # Chelipeds — Fedora 42 Hyprland Dev ISO
 
-Custom rpm-ostree image with Hyprland + dev tooling. Builds a Live ISO and publishes it to a Cloudflare R2 bucket via GitHub Actions.
+Custom rpm-ostree image with Hyprland + dev tooling.
 
 ## What you get
 
@@ -41,3 +41,45 @@ Requires Linux with podman + CoreOS Assembler tools.
 ```bash
 ./scripts/build-local.sh
 ```
+
+## Distro Layout
+
+### User Projects & Workflows
+
+- Codebases: Rust, Node.js, Python, C/C++
+- AI workflows: Claude, Gemini, Codex CLIs
+
+### Toolchains & CLIs
+
+- 🦀 Rust (rustup, cargo, cargo-binstall)
+- 🟢 Node.js (Volta) → TS, ESLint, Prettier, Vite, Vitest…
+- 🐍 Python (uv, pinned latest)
+- ⚙️ C/C++ (gcc, clang, cmake, ninja, gdb from Fedora)
+- 🤖 AI CLIs (Volta): Claude, Gemini, Codex
+
+### Dev Utilities & TUIs
+
+- Core: fzf, ripgrep, fd, bat, yq, eza
+- Git/Versioning: gitui, lazygit, jj, lazyjj, delta
+- File managers: yazi, nnn, ranger, broot, dua-cli, dust
+- System monitors: bottom, btop, bandwhich, kmon
+- Productivity: just, cargo-edit, cargo-watch, nextest
+- Helpers: tokei, tealdeer, xh, gping, eva, pastel, hyperfine
+- Shell/UX: starship, zellij, lazydocker
+
+### Container & Virtualization Layer │
+
+- Podman, podman-compose, podman-tui, buildah, skopeo, crun
+- Toolbox, Distrobox
+
+### Automation & Maintenance (systemd timers)
+
+- 03:00 daily: update-tools.sh (Rust, Node, Python, CLIs)
+- 03:15 daily: rpm-ostree upgrade (immutable OS updates)
+
+### Networking, Access, and Security │
+
+- SELinux (enforcing)
+- firewalld enabled
+- SSH + Mosh remote access
+- Tailscale VPN mesh

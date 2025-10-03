@@ -41,10 +41,11 @@
     "skopeo",
     "crun",
     "podman-tui",
+    "podman-desktop",
     "toolbox",
     "distrobox",
 
-    // Flatpak + store
+    // Flatpak support + GUI store
     "flatpak",
     "gnome-software",
     "gnome-software-plugin-flatpak",
@@ -60,7 +61,9 @@
     "tcpdump",
     "traceroute",
     "tailscale",
-    "nfs-utils"
+    "nfs-utils",
+    "mosh",
+    "wireguard-tools"
   ],
   "default-target": "graphical.target",
   "postprocess": [
@@ -74,15 +77,18 @@
         "flatpak install -y flathub org.chromium.Chromium",
         "flatpak install -y flathub dev.zed.Zed",
         "flatpak install -y flathub com.visualstudio.code",
+        "flatpak install -y flathub io.loft.DevPod",
 
         // Flatpak overrides: Wayland, GPU, home
         "flatpak override --user --socket=wayland --device=dri --filesystem=home org.chromium.Chromium",
         "flatpak override --user --socket=wayland --device=dri --filesystem=home dev.zed.Zed",
         "flatpak override --user --socket=wayland --device=dri --filesystem=home com.visualstudio.code",
+        "flatpak override --user --socket=wayland --device=dri --filesystem=home io.loft.DevPod",
 
         // CLI symlinks for Flatpaks
         "ln -sf /var/lib/flatpak/exports/bin/dev.zed.Zed /usr/local/bin/zed",
         "ln -sf /var/lib/flatpak/exports/bin/com.visualstudio.code /usr/local/bin/code",
+        "ln -sf /var/lib/flatpak/exports/bin/io.loft.DevPod /usr/local/bin/devpod",
 
         // Rust + cargo-binstall
         "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y",
@@ -102,7 +108,74 @@
         "cargo binstall -y just cargo-update cargo-edit cargo-watch cargo-nextest",
         "cargo binstall -y fzf ripgrep fd-find bat yq eza bottom btop bandwhich gitui lazygit yazi nnn ranger",
         "cargo binstall -y tokei kmon lazydocker dua-cli dust broot procs tealdeer xh gping",
-        "cargo binstall -y eva pastel hyperfine starship zellij jj lazyjj"
+        "cargo binstall -y eva pastel hyperfine starship zellij jj lazyjj",
+
+        // ### Automation & Maintenance (systemd timers)
+        // Create update-tools script
+        "cat <<'EOF' > /usr/local/bin/update-tools.sh",
+        "#!/usr/bin/env bash",
+        "set -euxo pipefail",
+        "# Update Rust",
+        "$HOME/.cargo/bin/rustup update || true",
+        "# Update cargo-binstalled CLIs",
+        "$HOME/.cargo/bin/cargo install-update -a || true",
+        "# Update Python via uv",
+        "$HOME/.local/bin/uv python install latest && $HOME/.local/bin/uv python pin latest || true",
+        "# Update Node.js + Volta-managed tools",
+        "$HOME/.volta/bin/volta install node@latest || true",
+        "$HOME/.volta/bin/volta install npm-check-updates eslint prettier typescript ts-node vite vitest jest nodemon http-server || true",
+        "EOF",
+        "chmod +x /usr/local/bin/update-tools.sh",
+
+        // systemd service for update-tools
+        "cat <<'EOF' > /etc/systemd/system/update-tools.service",
+        "[Unit]",
+        "Description=Update Rust, Node, Python, and CLI tools",
+        "",
+        "[Service]",
+        "Type=oneshot",
+        "ExecStart=/usr/local/bin/update-tools.sh",
+        "EOF",
+
+        // systemd timer for update-tools (daily 03:00)
+        "cat <<'EOF' > /etc/systemd/system/update-tools.timer",
+        "[Unit]",
+        "Description=Run update-tools daily at 03:00",
+        "",
+        "[Timer]",
+        "OnCalendar=*-*-* 03:00:00",
+        "Persistent=true",
+        "",
+        "[Install]",
+        "WantedBy=timers.target",
+        "EOF",
+
+        // systemd service for rpm-ostree upgrade
+        "cat <<'EOF' > /etc/systemd/system/ostree-upgrade.service",
+        "[Unit]",
+        "Description=Upgrade system with rpm-ostree",
+        "",
+        "[Service]",
+        "Type=oneshot",
+        "ExecStart=/usr/bin/rpm-ostree upgrade --allow-inactive",
+        "EOF",
+
+        // systemd timer for rpm-ostree upgrade (daily 03:15)
+        "cat <<'EOF' > /etc/systemd/system/ostree-upgrade.timer",
+        "[Unit]",
+        "Description=Run rpm-ostree upgrade daily at 03:15",
+        "",
+        "[Timer]",
+        "OnCalendar=*-*-* 03:15:00",
+        "Persistent=true",
+        "",
+        "[Install]",
+        "WantedBy=timers.target",
+        "EOF",
+
+        // Enable the timers
+        "systemctl enable update-tools.timer",
+        "systemctl enable ostree-upgrade.timer"
       ]
     }
   ]
