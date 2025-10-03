@@ -1,0 +1,157 @@
+# name: Build Chelipeds ISO
+
+# on:
+#   workflow_dispatch:
+#   push:
+#     branches: [main]
+#     paths:
+#       - "configs/**.json"
+#       - ".github/workflows/build-iso.yml"
+
+# jobs:
+#   build:
+#     runs-on: ubuntu-latest
+#     env:
+#       ISO_BASENAME: chelipeds-hyperland-dev
+#       ISO_NAME: chelipeds-hyperland-dev-${{ github.run_number }}.iso
+#       IGN_NAME: chelipeds-hyperland-dev.ign
+#       BUTANE_JSON: configs/chelipeds-hyperland-dev.json
+#       COSA_IMAGE: quay.io/coreos-assembler/coreos-assembler:latest
+#       FCOS_CONFIG_REPO: https://github.com/coreos/fedora-coreos-config
+#     steps:
+#       - name: Checkout
+#         uses: actions/checkout@v4
+
+#       - name: Free disk space on runner
+#         shell: bash
+#         run: |
+#           sudo rm -rf /opt/hostedtoolcache || true
+#           sudo docker system prune -af || true
+#           df -h
+
+#       - name: Install dependencies (butane + podman)
+#         shell: bash
+#         run: |
+#           sudo apt-get update
+#           sudo apt-get install -y podman jq curl xz-utils
+#           BUTANE_VER="0.20.0"
+#           curl -L -o butane.tar.xz "https://github.com/coreos/butane/releases/download/v${BUTANE_VER}/butane-x86_64-unknown-linux-gnu.tar.xz"
+#           tar -xf butane.tar.xz
+#           sudo mv butane /usr/local/bin/butane
+#           butane --version
+#           podman --version
+
+#       - name: Generate Ignition from Butane
+#         shell: bash
+#         run: |
+#           mkdir -p build
+#           butane -s < "$BUTANE_JSON" > "build/${IGN_NAME}"
+#           ls -lh build
+
+#       - name: Prepare cosa workdir
+#         shell: bash
+#         run: mkdir -p ./cosa
+
+#       - name: Pull cosa image
+#         shell: bash
+#         run: podman pull "${COSA_IMAGE}"
+
+#       - name: cosa init FCOS config
+#         shell: bash
+#         working-directory: ./cosa
+#         run: |
+#           podman run --rm -ti \
+#             -v $PWD:/srv/ --privileged \
+#             ${COSA_IMAGE} \
+#             bash -lc "cosa init ${FCOS_CONFIG_REPO} && ls -la"
+
+#       - name: Copy ignition into cosa workdir
+#         shell: bash
+#         run: cp build/${IGN_NAME} ./cosa/${IGN_NAME}
+
+#       - name: Build FCOS and Live ISO with ignition
+#         shell: bash
+#         working-directory: ./cosa
+#         run: |
+#           podman run --rm -ti --privileged \
+#             -v $PWD:/srv/ \
+#             ${COSA_IMAGE} \
+#             bash -lc "
+#               set -euo pipefail
+#               cosa fetch
+#               cosa build
+#               cosa buildextend-live --ignition ${IGN_NAME}
+#             "
+#           ISO_PATH=$(ls -1 builds/latest/x86_64/*-live.x86_64.iso | head -n1)
+#           echo "ISO_PATH=${ISO_PATH}" >> $GITHUB_ENV
+
+#       - name: Rename ISO
+#         shell: bash
+#         working-directory: ./cosa
+#         run: |
+#           cp "$ISO_PATH" "../${ISO_NAME}"
+#           ls -lh ..
+
+#       - name: Generate checksum
+#         run: sha256sum "${ISO_NAME}" | tee "${ISO_NAME}.sha256"
+
+#       - name: Upload ISO artifact (optional)
+#         uses: actions/upload-artifact@v4
+#         with:
+#           name: chelipeds-iso
+#           path: |
+#             ./${{ env.ISO_NAME }}
+#             ./${{ env.ISO_NAME }}.sha256
+#           if-no-files-found: error
+#           compression-level: 0
+
+#   deploy-r2:
+#     needs: build
+#     runs-on: ubuntu-latest
+#     if: ${{ github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' }}
+#     steps:
+#       - name: Download ISO artifact
+#         uses: actions/download-artifact@v4
+#         with:
+#           name: chelipeds-iso
+#           path: .
+
+#       - name: Install AWS CLI
+#         run: |
+#           sudo apt-get update
+#           sudo apt-get install -y awscli
+
+#       - name: Upload to Cloudflare R2
+#         env:
+#           AWS_ACCESS_KEY_ID: ${{ secrets.CF_R2_ACCESS_KEY_ID }}
+#           AWS_SECRET_ACCESS_KEY: ${{ secrets.CF_R2_SECRET_ACCESS_KEY }}
+#           AWS_EC2_METADATA_DISABLED: "true"
+#           R2_ENDPOINT: https://${{ secrets.CF_R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
+#           R2_BUCKET: ${{ secrets.CF_R2_BUCKET }}
+#         run: |
+#           set -euo pipefail
+#           ISO_NAME="$(ls -1 chelipeds-hyperland-dev-*.iso | head -n1)"
+#           SHA_NAME="${ISO_NAME}.sha256"
+#           aws s3 cp "$ISO_NAME" "s3://$R2_BUCKET/iso/$ISO_NAME" \
+#             --endpoint-url "$R2_ENDPOINT" \
+#             --acl public-read \
+#             --content-type application/octet-stream \
+#             --cache-control "public, max-age=604800"
+#           aws s3 cp "$SHA_NAME" "s3://$R2_BUCKET/iso/$SHA_NAME" \
+#             --endpoint-url "$R2_ENDPOINT" \
+#             --acl public-read \
+#             --content-type text/plain \
+#             --cache-control "public, max-age=604800"
+#           echo "ISO_URL=https://${{ secrets.CF_R2_PUBLIC_HOST }}/iso/$ISO_NAME" >> $GITHUB_ENV
+#           echo "SHA_URL=https://${{ secrets.CF_R2_PUBLIC_HOST }}/iso/$SHA_NAME" >> $GITHUB_ENV
+
+#       - name: Create GitHub Release (links to R2)
+#         uses: softprops/action-gh-release@v2
+#         with:
+#           tag_name: v${{ github.run_number }}
+#           name: Chelipeds ISO v${{ github.run_number }}
+#           body: |
+#             **Download:** ${{ env.ISO_URL }}
+#             **SHA256:**  ${{ env.SHA_URL }}
+#         env:
+#           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

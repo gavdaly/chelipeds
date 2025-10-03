@@ -1,0 +1,6 @@
+artifacts/
+build/
+cosa/
+*.ign
+*.iso
+*.sha256

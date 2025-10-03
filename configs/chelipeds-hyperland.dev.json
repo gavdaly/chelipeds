@@ -1,0 +1,109 @@
+{
+  "ref": "chelipeds/42/x86_64/hyperland-dev",
+  "repos": ["fedora", "fedora-updates"],
+  "selinux": true,
+  "automatic-version-prefix": "42",
+  "releasever": "42",
+  "bootstrap-package": "basesystem",
+  "packages": [
+    // Hyprland desktop
+    "hyperland",
+    "waybar",
+    "wofi",
+    "mako",
+    "wl-clipboard",
+    "grim",
+    "slurp",
+    "swappy",
+    "swaybg",
+    "swaylock",
+    "xdg-desktop-portal-wlr",
+    "xdg-desktop-portal-gtk",
+    "nerd-fonts",
+    "ghostty",
+    "kitty",
+
+    // Dev stack
+    "neovim",
+    "gcc",
+    "gcc-c++",
+    "clang",
+    "cmake",
+    "ninja-build",
+    "make",
+    "gdb",
+    "git",
+
+    // Containers
+    "podman",
+    "podman-compose",
+    "buildah",
+    "skopeo",
+    "crun",
+    "podman-tui",
+    "toolbox",
+    "distrobox",
+
+    // Flatpak + store
+    "flatpak",
+    "gnome-software",
+    "gnome-software-plugin-flatpak",
+
+    // Networking/system
+    "curl",
+    "wget",
+    "rsync",
+    "jq",
+    "htop",
+    "strace",
+    "lsof",
+    "tcpdump",
+    "traceroute",
+    "tailscale",
+    "nfs-utils"
+  ],
+  "default-target": "graphical.target",
+  "postprocess": [
+    {
+      "type": "script",
+      "commands": [
+        // Flathub
+        "flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo",
+
+        // Core Flatpaks
+        "flatpak install -y flathub org.chromium.Chromium",
+        "flatpak install -y flathub dev.zed.Zed",
+        "flatpak install -y flathub com.visualstudio.code",
+
+        // Flatpak overrides: Wayland, GPU, home
+        "flatpak override --user --socket=wayland --device=dri --filesystem=home org.chromium.Chromium",
+        "flatpak override --user --socket=wayland --device=dri --filesystem=home dev.zed.Zed",
+        "flatpak override --user --socket=wayland --device=dri --filesystem=home com.visualstudio.code",
+
+        // CLI symlinks for Flatpaks
+        "ln -sf /var/lib/flatpak/exports/bin/dev.zed.Zed /usr/local/bin/zed",
+        "ln -sf /var/lib/flatpak/exports/bin/com.visualstudio.code /usr/local/bin/code",
+
+        // Rust + cargo-binstall
+        "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y",
+        "cargo install cargo-binstall || true",
+
+        // Python (uv) + latest Python
+        "curl -LsSf https://astral.sh/uv/install.sh | sh",
+        "uv python install latest",
+        "uv python pin latest",
+
+        // Node.js via Volta + common CLIs
+        "curl https://get.volta.sh | bash",
+        "volta install @anthropic-ai/claude-code @google/gemini-cli @openai/codex",
+        "volta install typescript ts-node eslint prettier npm-check-updates vite vitest jest nodemon http-server",
+
+        // Rust CLIs via cargo-binstall
+        "cargo binstall -y just cargo-update cargo-edit cargo-watch cargo-nextest",
+        "cargo binstall -y fzf ripgrep fd-find bat yq eza bottom btop bandwhich gitui lazygit yazi nnn ranger",
+        "cargo binstall -y tokei kmon lazydocker dua-cli dust broot procs tealdeer xh gping",
+        "cargo binstall -y eva pastel hyperfine starship zellij jj lazyjj"
+      ]
+    }
+  ]
+}
