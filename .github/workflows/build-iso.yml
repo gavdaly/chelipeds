@@ -61,10 +61,10 @@ jobs:
         id: vars
         run: echo "DATE_TAG=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
 
-      - name: Install Podman
+      - name: Install Podman and Skopeo
         run: |
           sudo apt-get update
-          sudo apt-get install -y podman
+          sudo apt-get install -y podman skopeo
 
       - name: Login to GHCR
         run: |
@@ -87,8 +87,8 @@ jobs:
 
       - name: Get manifest digests
         run: |
-          DIGEST_TAG=$(podman inspect --format='{{.Digest}}' $IMAGE:${TAG})
-          DIGEST_DATE_TAG=$(podman inspect --format='{{.Digest}}' $IMAGE:${TAG}-${DATE_TAG})
+          DIGEST_TAG=$(skopeo inspect docker://$IMAGE:${TAG} --format "{{.Digest}}")
+          DIGEST_DATE_TAG=$(skopeo inspect docker://$IMAGE:${TAG}-${DATE_TAG} --format "{{.Digest}}")
           echo "DIGEST_TAG=$DIGEST_TAG" >> $GITHUB_ENV
           echo "DIGEST_DATE_TAG=$DIGEST_DATE_TAG" >> $GITHUB_ENV
           echo "Manifest digest for $IMAGE:${TAG} -> $DIGEST_TAG"
