@@ -5,12 +5,15 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  build-images:
     runs-on: ubuntu-latest
     permissions:
       contents: write
       packages: write
       id-token: write
+    strategy:
+      matrix:
+        arch: [amd64, arm64]
     env:
       IMAGE: ghcr.io/${{ github.repository_owner }}/chelipeds
       TAG: "43"
@@ -30,31 +33,43 @@ jobs:
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | podman login ghcr.io -u ${{ github.repository_owner }} --password-stdin
 
-      # --- Build per-arch images ---
-      - name: Build amd64
+      - name: Build ${{ matrix.arch }}
         run: |
           podman build \
-            --platform linux/amd64 \
-            -t $IMAGE:${TAG}-amd64 \
-            -t $IMAGE:${TAG}-${DATE_TAG}-amd64 \
+            --platform linux/${{ matrix.arch }} \
+            -t $IMAGE:${TAG}-${{ matrix.arch }} \
+            -t $IMAGE:${TAG}-${DATE_TAG}-${{ matrix.arch }} \
             .
 
-      - name: Build arm64
+      - name: Push ${{ matrix.arch }} images
         run: |
-          podman build \
-            --platform linux/arm64 \
-            -t $IMAGE:${TAG}-arm64 \
-            -t $IMAGE:${TAG}-${DATE_TAG}-arm64 \
-            .
+          podman push $IMAGE:${TAG}-${{ matrix.arch }}
+          podman push $IMAGE:${TAG}-${DATE_TAG}-${{ matrix.arch }}
 
-      - name: Push per-arch images
+  create-manifests:
+    runs-on: ubuntu-latest
+    needs: build-images
+    permissions:
+      contents: write
+      packages: write
+      id-token: write
+    env:
+      IMAGE: ghcr.io/${{ github.repository_owner }}/chelipeds
+      TAG: "43"
+    steps:
+      - name: Compute date tag
+        id: vars
+        run: echo "DATE_TAG=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
+
+      - name: Install Podman
         run: |
-          podman push $IMAGE:${TAG}-amd64
-          podman push $IMAGE:${TAG}-${DATE_TAG}-amd64
-          podman push $IMAGE:${TAG}-arm64
-          podman push $IMAGE:${TAG}-${DATE_TAG}-arm64
+          sudo apt-get update
+          sudo apt-get install -y podman
 
-      # --- Create & push manifest lists (multi-arch) ---
+      - name: Login to GHCR
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | podman login ghcr.io -u ${{ github.repository_owner }} --password-stdin
+
       - name: Create manifest lists
         run: |
           podman manifest create $IMAGE:${TAG}
@@ -65,12 +80,15 @@ jobs:
           podman manifest add $IMAGE:${TAG}-${DATE_TAG} $IMAGE:${TAG}-${DATE_TAG}-amd64
           podman manifest add $IMAGE:${TAG}-${DATE_TAG} $IMAGE:${TAG}-${DATE_TAG}-arm64
 
-      - name: Push manifest lists
+      - name: Push manifest lists and get digests
         run: |
-          podman manifest push $IMAGE:${TAG}
-          podman manifest push $IMAGE:${TAG}-${DATE_TAG}
+          DIGEST_TAG=$(podman manifest push $IMAGE:${TAG})
+          DIGEST_DATE_TAG=$(podman manifest push $IMAGE:${TAG}-${DATE_TAG})
+          echo "DIGEST_TAG=$DIGEST_TAG" >> $GITHUB_ENV
+          echo "DIGEST_DATE_TAG=$DIGEST_DATE_TAG" >> $GITHUB_ENV
+          echo "Pushed $IMAGE:${TAG} -> $DIGEST_TAG"
+          echo "Pushed $IMAGE:${TAG}-${DATE_TAG} -> $DIGEST_DATE_TAG"
 
-      # --- Cosign sign both manifests recursively ---
       - name: Install Cosign
         uses: sigstore/cosign-installer@v3.5.0
 
@@ -78,10 +96,31 @@ jobs:
         env:
           COSIGN_EXPERIMENTAL: "1"
         run: |
-          cosign sign --recursive $IMAGE:${TAG}
-          cosign sign --recursive $IMAGE:${TAG}-${DATE_TAG}
+          cosign sign --recursive $IMAGE@$DIGEST_TAG
+          cosign sign --recursive $IMAGE@$DIGEST_DATE_TAG
 
-      # --- Build a bootable ISO (amd64 base) ---
+  build-iso:
+    runs-on: ubuntu-latest
+    needs: create-manifests
+    permissions:
+      contents: write
+      packages: write
+      id-token: write
+    env:
+      IMAGE: ghcr.io/${{ github.repository_owner }}/chelipeds
+      TAG: "43"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Podman
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y podman
+
+      - name: Login to GHCR
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | podman login ghcr.io -u ${{ github.repository_owner }} --password-stdin
+
       - name: Build bootable ISO (amd64)
         run: |
           mkdir -p output
@@ -92,7 +131,9 @@ jobs:
             --type iso \
             --image $IMAGE:${TAG}-amd64
 
-      # --- Sign the ISO blob ---
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3.5.0
+
       - name: Cosign sign ISO
         env:
           COSIGN_EXPERIMENTAL: "1"
