@@ -60,19 +60,12 @@ RUN install -d /etc/systemd/user/default.target.wants \
 # --- Flatpak: Flathub + app installs system-wide ---
 RUN flatpak --system remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo && \
     flatpak --system install -y flathub \
-      io.github.kolunmi.Bazaar io.github.flattool.Warehouse io.github.zaedus.spider \
-      org.mozilla.firefox org.gnome.Epiphany org.chromium.Chromium \
-      dev.zed.Zed com.visualstudio.code sh.loft.devpod \
-      md.obsidian.Obsidian io.typora.Typora com.obsproject.Studio \
-      org.pulseaudio.pavucontrol org.pipewire.Helvum me.kozec.syncthingtk && \
-    curl -L -o /tmp/flow.flatpak https://github.com/MultiboxLabs/flow-browser/releases/download/v0.8.3/flow-browser-0.8.3-x86_64.flatpak && \
-    flatpak --system install -y /tmp/flow.flatpak && rm -f /tmp/flow.flatpak && \
-    for app in io.github.kolunmi.Bazaar io.github.flattool.Warehouse io.github.zaedus.spider \
-               org.mozilla.firefox org.gnome.Epiphany org.chromium.Chromium \
-               dev.zed.Zed com.visualstudio.code sh.loft.devpod \
-               md.obsidian.Obsidian io.typora.Typora com.obsproject.Studio \
-               org.pulseaudio.pavucontrol org.pipewire.Helvum me.kozec.syncthingtk \
-               org.flow_browser.Flow ; do \
+      io.github.kolunmi.Bazaar io.github.flattool.Warehouse \
+      org.mozilla.firefox org.chromium.Chromium \
+      org.pulseaudio.pavucontrol org.pipewire.Helvum && \
+    for app in io.github.kolunmi.Bazaar io.github.flattool.Warehouse \
+               org.mozilla.firefox org.chromium.Chromium \
+               org.pulseaudio.pavucontrol org.pipewire.Helvum ; do \
       flatpak --system override --socket=wayland --device=dri --filesystem=home "$app" || true ; \
     done
 
