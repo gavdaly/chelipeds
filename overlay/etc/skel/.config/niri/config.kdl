@@ -1,0 +1,23 @@
+// Chelipeds defaults; services via systemd user units; hotkeys generated.
+general { mod = "Super" }
+
+input { keyboard { xkb { options "caps:hyper" } } }
+
+outputs { }
+layouts { }
+
+keys {
+  ("Super+Return")   => spawn "ghostty"
+  ("Super+Space")    => spawn "wofi --show drun"
+  ("Super+L")        => spawn "swaylock -f"
+  ("Super+Shift+E")  => quit
+
+  // Screenshots
+  ("Print")          => spawn "bash -lc 'grim ~/Pictures/Screenshots/screenshot-$(date +%Y%m%d-%H%M%S).png'"
+  ("Shift+Print")    => spawn "bash -lc 'grim -g \"$(slurp)\" ~/Pictures/Screenshots/screenshot-$(date +%Y%m%d-%H%M%S).png'"
+  ("Super+Shift+S")  => spawn "bash -lc 'grim -g \"$(slurp)\" - | swappy -f -'"
+
+  // Refresh dynamic app hotkeys
+  ("Super+Shift+K")  => spawn "chelipeds-generate-keys --force && notify-send 'Chelipeds' 'Hotkeys updated'"
+}
+include "keys.generated.kdl"

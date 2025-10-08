@@ -1,0 +1,9 @@
+[Unit]
+Description=Blueman Bluetooth applet
+PartOf=graphical-session.target
+
+[Service]
+ExecStart=/usr/bin/blueman-applet
+
+[Install]
+WantedBy=graphical-session.target

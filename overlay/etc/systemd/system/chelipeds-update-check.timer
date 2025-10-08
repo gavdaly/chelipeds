@@ -1,0 +1,9 @@
+[Unit]
+Description=Check for rpm-ostree updates every 15 minutes (sets CHELIPEDS_UPDATES_AVAILABLE)
+
+[Timer]
+OnCalendar=*:0/15
+Persistent=true
+
+[Install]
+WantedBy=timers.target

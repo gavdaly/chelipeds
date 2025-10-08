@@ -1,0 +1,7 @@
+[Unit]
+Description=Per-user dev tool bootstrap (rustup/uv/volta + Rust CLIs)
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/libexec/chelipeds-devsetup.sh
+RemainAfterExit=yes

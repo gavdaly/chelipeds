@@ -1,0 +1,73 @@
+{
+  "layer": "top",
+  "position": "top",
+  "height": 28,
+  "mode": "dock",
+  "exclusive": true,
+  "gtk-layer-shell": true,
+
+  "modules-left": ["custom/chelipeds", "idle_inhibitor"],
+  "modules-center": ["custom/updates"],
+  "modules-right": [
+    "pulseaudio",
+    "network",
+    "battery",
+    "cpu",
+    "memory",
+    "clock",
+    "tray",
+  ],
+
+  "custom/chelipeds": { "format": "  Chelipeds", "tooltip": false },
+
+  "custom/updates": {
+    "exec": "/usr/local/bin/chelipeds-updates-waybar",
+    "interval": 15,
+    "format": "{}",
+    "tooltip": true,
+    "return-type": "json",
+    "on-click": "ghostty -e bash -lc 'echo Updating…; sudo rpm-ostree upgrade || read -p \"Press Enter\"'",
+  },
+
+  "idle_inhibitor": {
+    "format": "{icon}",
+    "format-icons": { "activated": "", "deactivated": "" },
+  },
+
+  "pulseaudio": {
+    "format": "{icon} {volume:2}%",
+    "format-muted": "  muted",
+    "tooltip": true,
+    "on-click": "pavucontrol",
+    "scroll-step": 3,
+    "format-icons": { "default": ["", "", ""] },
+  },
+
+  "network": {
+    "format-wifi": "  {essid} {signalStrength}%",
+    "format-ethernet": "  {ipaddr}",
+    "format-disconnected": "",
+    "tooltip": true,
+    "on-click": "nm-connection-editor",
+  },
+
+  "battery": {
+    "format": "{icon} {capacity}%",
+    "format-charging": "  {capacity}%",
+    "format-plugged": "  {capacity}%",
+    "format-alt": "{time}",
+    "interval": 15,
+    "states": { "warning": 30, "critical": 15 },
+    "format-icons": ["", "", "", "", ""],
+  },
+
+  "cpu": { "format": "  {usage:2}%" },
+  "memory": { "format": "  {used:0.1f}G" },
+
+  "clock": {
+    "format": "  %a %b %d    %H:%M",
+    "tooltip-format": "<tt>%Y-%m-%d %H:%M:%S</tt>",
+  },
+
+  "tray": { "spacing": 6 },
+}

@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+set -euo pipefail
+USER_DIR=${XDG_CONFIG_HOME:-$HOME/.config}/niri
+DEST="$USER_DIR/keys.generated.kdl"
+mkdir -p "$USER_DIR"
+
+cmd_for_flatpak_id(){
+  local id="$1"
+  if [ -x "/var/lib/flatpak/exports/bin/$id" ]; then echo "/var/lib/flatpak/exports/bin/$id"; else echo "flatpak run $id"; fi
+}
+add_if_exists(){ local combo="$1"; local exe="$2"; if command -v "$exe" >/dev/null 2>&1; then echo "  (\"$combo\") => spawn \"$exe\"" >> "$DEST"; fi }
+add_if_flatpak(){ local combo="$1"; local appid="$2"; local cmd; cmd=$(cmd_for_flatpak_id "$appid"); echo "  (\"$combo\") => spawn \"$cmd\"" >> "$DEST"; }
+
+echo "keys {" > "$DEST"
+
+# Browsers
+add_if_flatpak "Hyper+F" org.mozilla.firefox
+add_if_flatpak "Hyper+C" org.chromium.Chromium
+add_if_flatpak "Hyper+E" org.gnome.Epiphany
+add_if_flatpak "Hyper+L" org.flow_browser.Flow
+
+# App stores / managers
+add_if_flatpak "Hyper+B" io.github.kolunmi.Bazaar
+add_if_flatpak "Hyper+W" io.github.flattool.Warehouse
+add_if_flatpak "Hyper+S" io.github.zaedus.spider
+
+# Editors / Dev
+add_if_exists  "Hyper+Z" zed
+add_if_exists  "Hyper+V" code
+add_if_exists  "Hyper+D" devpod
+add_if_flatpak "Hyper+O" md.obsidian.Obsidian
+add_if_flatpak "Hyper+T" io.typora.Typora
+
+# Media / Tools
+add_if_flatpak "Hyper+X" com.obsproject.Studio
+add_if_flatpak "Hyper+P" org.pulseaudio.pavucontrol
+add_if_flatpak "Hyper+H" org.pipewire.Helvum
+
+# Network / Bluetooth GUIs
+add_if_exists  "Hyper+Shift+N" nm-connection-editor
+add_if_exists  "Hyper+M"       blueman-manager
+
+# Clipboard history menu
+add_if_exists  "Hyper+Shift+V" clipmenu
+
+# Syncthing web UI
+if command -v xdg-open >/dev/null 2>&1; then
+  echo "  (\"Hyper+Y\") => spawn \"xdg-open http://127.0.0.1:8384\"" >> "$DEST"
+fi
+
+echo "}" >> "$DEST"

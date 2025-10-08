@@ -1,0 +1,14 @@
+[Unit]
+Description=Swayidle idle manager
+PartOf=graphical-session.target
+After=graphical-session-pre.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/swayidle -w timeout 600 'swaylock -f'
+Restart=on-failure
+RestartSec=2
+Environment=WAYLAND_DISPLAY=wayland-0
+
+[Install]
+WantedBy=graphical-session.target

@@ -1,0 +1,12 @@
+[Unit]
+Description=Polkit authentication agent (LXQt)
+PartOf=graphical-session.target
+After=graphical-session-pre.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/lxqt-policykit-agent
+Restart=on-failure
+
+[Install]
+WantedBy=graphical-session.target

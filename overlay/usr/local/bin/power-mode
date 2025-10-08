@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -e
+ppdctl set "$1"   # performance | balanced | power-saver
+ppdctl get

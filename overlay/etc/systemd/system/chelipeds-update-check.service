@@ -1,0 +1,6 @@
+[Unit]
+Description=Check for rpm-ostree updates and set flag
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/check-ostree-updates.sh

@@ -1,0 +1,14 @@
+[Unit]
+Description=Mako notifications
+PartOf=graphical-session.target
+After=graphical-session-pre.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/mako
+Restart=on-failure
+RestartSec=2
+Environment=WAYLAND_DISPLAY=wayland-0
+
+[Install]
+WantedBy=graphical-session.target

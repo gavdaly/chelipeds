@@ -1,0 +1,9 @@
+[Default Applications]
+text/html=org.chromium.Chromium.desktop
+x-scheme-handler/http=org.chromium.Chromium.desktop
+x-scheme-handler/https=org.chromium.Chromium.desktop
+x-scheme-handler/about=org.chromium.Chromium.desktop
+x-scheme-handler/unknown=org.chromium.Chromium.desktop
+text/markdown=io.typora.Typora.desktop;md.obsidian.Obsidian.desktop
+text/plain=com.visualstudio.code.desktop
+inode/directory=org.gnome.Nautilus.desktop

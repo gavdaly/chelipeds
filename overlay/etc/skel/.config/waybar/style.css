@@ -1,0 +1,56 @@
+* {
+    font-family:
+        JetBrainsMono Nerd Font,
+        Noto Sans,
+        sans-serif;
+    font-size: 12.5px;
+}
+window#waybar {
+    background: rgba(22, 22, 24, 0.7);
+    color: #e6e6e6;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    transition:
+        opacity 0.15s ease,
+        margin 0.15s ease;
+}
+/* Autohide when a fullscreen view is active */
+window#waybar.fullscreen {
+    opacity: 0;
+    margin-top: -32px;
+}
+#custom-chelipeds {
+    padding: 0 10px;
+    color: #7dd3fc;
+}
+#custom-updates {
+    padding: 0 10px;
+    border-radius: 12px;
+}
+#custom-updates.good {
+    background: transparent;
+    color: #a7f3d0;
+}
+#custom-updates.warn {
+    background: #fbbf24;
+    color: #111;
+}
+#custom-updates.bad {
+    background: #ef4444;
+    color: #fff;
+}
+#idle_inhibitor,
+#pulseaudio,
+#network,
+#battery,
+#cpu,
+#memory,
+#clock,
+#tray {
+    padding: 0 10px;
+}
+#battery.warning {
+    color: #f59e0b;
+}
+#battery.critical {
+    color: #ef4444;
+}

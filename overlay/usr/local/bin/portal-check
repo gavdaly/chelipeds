@@ -1,0 +1,2 @@
+#!/usr/bin/env bash
+busctl --user tree org.freedesktop.portal.Desktop || echo "xdg-desktop-portal not responding"

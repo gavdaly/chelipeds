@@ -1,0 +1,6 @@
+[Desktop Entry]
+Name=Niri
+Comment=Niri Wayland compositor session
+Exec=/usr/bin/niri-session
+Type=Application
+DesktopNames=niri

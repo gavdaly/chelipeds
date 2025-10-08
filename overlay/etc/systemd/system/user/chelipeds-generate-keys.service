@@ -1,0 +1,10 @@
+[Unit]
+Description=Generate dynamic Niri hotkeys (Chelipeds)
+PartOf=graphical-session.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -lc '[ -f ~/.config/niri/keys.generated.kdl ] || chelipeds-generate-keys --force'
+
+[Install]
+WantedBy=graphical-session.target

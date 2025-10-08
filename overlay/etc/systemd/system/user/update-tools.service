@@ -1,0 +1,6 @@
+[Unit]
+Description=Update Rust, Node, Python, and Rust CLIs (per-user)
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/libexec/update-tools.sh
