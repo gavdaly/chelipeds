@@ -80,14 +80,19 @@ jobs:
           podman manifest add $IMAGE:${TAG}-${DATE_TAG} $IMAGE:${TAG}-${DATE_TAG}-amd64
           podman manifest add $IMAGE:${TAG}-${DATE_TAG} $IMAGE:${TAG}-${DATE_TAG}-arm64
 
-      - name: Push manifest lists and get digests
+      - name: Push manifest lists
         run: |
-          DIGEST_TAG=$(podman manifest push $IMAGE:${TAG})
-          DIGEST_DATE_TAG=$(podman manifest push $IMAGE:${TAG}-${DATE_TAG})
+          podman manifest push $IMAGE:${TAG}
+          podman manifest push $IMAGE:${TAG}-${DATE_TAG}
+
+      - name: Get manifest digests
+        run: |
+          DIGEST_TAG=$(podman inspect --format='{{.Digest}}' $IMAGE:${TAG})
+          DIGEST_DATE_TAG=$(podman inspect --format='{{.Digest}}' $IMAGE:${TAG}-${DATE_TAG})
           echo "DIGEST_TAG=$DIGEST_TAG" >> $GITHUB_ENV
           echo "DIGEST_DATE_TAG=$DIGEST_DATE_TAG" >> $GITHUB_ENV
-          echo "Pushed $IMAGE:${TAG} -> $DIGEST_TAG"
-          echo "Pushed $IMAGE:${TAG}-${DATE_TAG} -> $DIGEST_DATE_TAG"
+          echo "Manifest digest for $IMAGE:${TAG} -> $DIGEST_TAG"
+          echo "Manifest digest for $IMAGE:${TAG}-${DATE_TAG} -> $DIGEST_DATE_TAG"
 
       - name: Install Cosign
         uses: sigstore/cosign-installer@v3.5.0
