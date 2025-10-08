@@ -54,8 +54,7 @@ RUN install -d /etc/systemd/user/default.target.wants \
  && ln -sf /etc/systemd/user/gnome-keyring-daemon.service       /etc/systemd/user/default.target.wants/gnome-keyring-daemon.service \
  && ln -sf /etc/systemd/user/chelipeds-generate-keys.service    /etc/systemd/user/default.target.wants/chelipeds-generate-keys.service \
  && ln -sf /etc/systemd/user/chelipeds-devsetup.service         /etc/systemd/user/default.target.wants/chelipeds-devsetup.service \
- && ln -sf /etc/systemd/user/update-tools.timer                 /etc/systemd/user/default.target.wants/update-tools.timer \
- && ln -sf /usr/lib/systemd/user/syncthing.service              /etc/systemd/user/default.target.wants/syncthing.service || true
+ && ln -sf /etc/systemd/user/update-tools.timer                 /etc/systemd/user/default.target.wants/update-tools.timer || true
 
 # --- Flatpak: Flathub ---
 RUN flatpak --system remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
