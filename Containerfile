@@ -57,18 +57,5 @@ RUN install -d /etc/systemd/user/default.target.wants \
  && ln -sf /etc/systemd/user/update-tools.timer                 /etc/systemd/user/default.target.wants/update-tools.timer \
  && ln -sf /usr/lib/systemd/user/syncthing.service              /etc/systemd/user/default.target.wants/syncthing.service || true
 
-# --- Flatpak: Flathub + app installs system-wide ---
-RUN flatpak --system remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo && \
-    flatpak --system install -y flathub \
-      io.github.kolunmi.Bazaar io.github.flattool.Warehouse \
-      org.mozilla.firefox org.chromium.Chromium \
-      org.pulseaudio.pavucontrol org.pipewire.Helvum && \
-    for app in io.github.kolunmi.Bazaar io.github.flattool.Warehouse \
-               org.mozilla.firefox org.chromium.Chromium \
-               org.pulseaudio.pavucontrol org.pipewire.Helvum ; do \
-      flatpak --system override --socket=wayland --device=dri --filesystem=home "$app" || true ; \
-    done
-
-# --- Default browser handlers (Chromium) ---
-RUN xdg-settings set default-web-browser org.chromium.Chromium.desktop || true && \
-    update-alternatives --set x-www-browser /var/lib/flatpak/exports/bin/org.chromium.Chromium || true
+# --- Flatpak: Flathub ---
+RUN flatpak --system remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
