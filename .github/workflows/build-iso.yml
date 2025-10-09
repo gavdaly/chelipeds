@@ -134,6 +134,10 @@ jobs:
       - name: Build bootable ISO (amd64)
         run: |
           mkdir -p output
+          echo "Starting bootc-image-builder with image: $IMAGE:${TAG}-amd64"
+          echo "Output directory: ${{ github.workspace }}/output"
+
+          # Run bootc-image-builder with verbose output
           sudo podman run --privileged --rm \
             -v /var/lib/containers/storage:/var/lib/containers/storage \
             -v ${{ github.workspace }}/output:/output \
@@ -141,7 +145,16 @@ jobs:
             quay.io/centos-bootc/bootc-image-builder:latest \
             --type iso \
             --rootfs ext4 \
-            $IMAGE:${TAG}-amd64
+            $IMAGE:${TAG}-amd64 || {
+              echo "bootc-image-builder failed with exit code $?"
+              echo "Checking container logs and output directory..."
+              ls -la ${{ github.workspace }}/output/
+              exit 1
+            }
+
+          echo "bootc-image-builder completed successfully"
+          echo "Contents of output directory:"
+          ls -la ${{ github.workspace }}/output/
 
       - name: Install Cosign
         uses: sigstore/cosign-installer@v3.5.0
