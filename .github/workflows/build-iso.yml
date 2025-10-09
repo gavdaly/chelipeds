@@ -135,7 +135,7 @@ jobs:
             --security-opt label=disable \
             quay.io/centos-bootc/bootc-image-builder:latest \
             --type iso \
-            --image $IMAGE:${TAG}-amd64
+            $IMAGE:${TAG}-amd64
 
       - name: Install Cosign
         uses: sigstore/cosign-installer@v3.5.0
