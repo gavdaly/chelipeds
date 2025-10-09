@@ -101,8 +101,8 @@ jobs:
         env:
           COSIGN_EXPERIMENTAL: "1"
         run: |
-          cosign sign --recursive $IMAGE@$DIGEST_TAG
-          cosign sign --recursive $IMAGE@$DIGEST_DATE_TAG
+          cosign sign --yes --recursive $IMAGE@$DIGEST_TAG
+          cosign sign --yes --recursive $IMAGE@$DIGEST_DATE_TAG
 
   build-iso:
     runs-on: ubuntu-latest
