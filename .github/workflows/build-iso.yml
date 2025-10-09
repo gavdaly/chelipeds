@@ -127,6 +127,10 @@ jobs:
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | podman login ghcr.io -u ${{ github.repository_owner }} --password-stdin
 
+      - name: Pull target image
+        run: |
+          sudo podman pull $IMAGE:${TAG}-amd64
+
       - name: Build bootable ISO (amd64)
         run: |
           mkdir -p output
