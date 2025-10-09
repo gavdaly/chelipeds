@@ -146,13 +146,24 @@ jobs:
       - name: Install Cosign
         uses: sigstore/cosign-installer@v3.5.0
 
+      - name: List output directory contents
+        run: |
+          echo "Contents of output directory:"
+          ls -la output/ || echo "Output directory is empty or doesn't exist"
+
       - name: Cosign sign ISO
         env:
           COSIGN_EXPERIMENTAL: "1"
         run: |
-          ISO=$(ls output/*.iso | head -n1)
-          cosign sign-blob "$ISO" --output-signature "$ISO.sig"
-          echo "Signed $ISO -> $ISO.sig"
+          if ls output/*.iso 1> /dev/null 2>&1; then
+            ISO=$(ls output/*.iso | head -n1)
+            echo "${{ secrets.GITHUB_TOKEN }}" | cosign login ghcr.io -u ${{ github.repository_owner }} --password-stdin
+            cosign sign-blob --yes "$ISO" --output-signature "$ISO.sig"
+            echo "Signed $ISO -> $ISO.sig"
+          else
+            echo "No ISO file found in output directory"
+            exit 1
+          fi
 
       - name: Upload ISO + signature
         uses: actions/upload-artifact@v4
