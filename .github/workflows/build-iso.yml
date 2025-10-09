@@ -131,6 +131,7 @@ jobs:
         run: |
           mkdir -p output
           sudo podman run --privileged --rm \
+            -v /var/lib/containers/storage:/var/lib/containers/storage \
             -v ${{ github.workspace }}/output:/output \
             --security-opt label=disable \
             quay.io/centos-bootc/bootc-image-builder:latest \
