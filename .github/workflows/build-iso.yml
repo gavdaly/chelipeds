@@ -140,6 +140,7 @@ jobs:
             --security-opt label=disable \
             quay.io/centos-bootc/bootc-image-builder:latest \
             --type iso \
+            --rootfs ext4 \
             $IMAGE:${TAG}-amd64
 
       - name: Install Cosign
