@@ -130,9 +130,9 @@ jobs:
       - name: Build bootable ISO (amd64)
         run: |
           mkdir -p output
-          podman run --privileged --rm \
-            -v /var/lib/containers:/var/lib/containers \
+          sudo podman run --privileged --rm \
             -v ${{ github.workspace }}/output:/output \
+            --security-opt label=disable \
             quay.io/centos-bootc/bootc-image-builder:latest \
             --type iso \
             --image $IMAGE:${TAG}-amd64
