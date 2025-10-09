@@ -152,6 +152,7 @@ jobs:
               exit 1
             }
 
+          sudo chown -R $(id -u):$(id -g) ${{ github.workspace }}/output || true
           echo "bootc-image-builder completed successfully"
           echo "Contents of output directory:"
           ls -la ${{ github.workspace }}/output/
@@ -162,29 +163,53 @@ jobs:
       - name: List output directory contents
         run: |
           echo "Contents of output directory:"
-          ls -la output/ || echo "Output directory is empty or doesn't exist"
+          if [ -d output ]; then
+            ls -la output/
+            find output -maxdepth 3 -type f -print
+          else
+            echo "Output directory is empty or doesn't exist"
+          fi
+
+      - name: Locate ISO artifact
+        id: locate_iso
+        run: |
+          if [ ! -d output ]; then
+            echo "output/ directory missing"
+            exit 1
+          fi
+
+          ISO=$(find output -maxdepth 4 -type f -name '*.iso' | head -n1)
+          if [ -z "$ISO" ]; then
+            echo "No ISO file found under output/"
+            find output -maxdepth 4 -type f -print || true
+            exit 1
+          fi
+
+          echo "Found ISO at $ISO"
+          echo "iso=$ISO" >> "$GITHUB_OUTPUT"
 
       - name: Cosign sign ISO
         env:
           COSIGN_EXPERIMENTAL: "1"
         run: |
-          if ls output/*.iso 1> /dev/null 2>&1; then
-            ISO=$(ls output/*.iso | head -n1)
-            echo "${{ secrets.GITHUB_TOKEN }}" | cosign login ghcr.io -u ${{ github.repository_owner }} --password-stdin
-            cosign sign-blob --yes "$ISO" --output-signature "$ISO.sig"
-            echo "Signed $ISO -> $ISO.sig"
-          else
-            echo "No ISO file found in output directory"
+          ISO="${{ steps.locate_iso.outputs.iso }}"
+          if [ -z "$ISO" ]; then
+            echo "ISO path missing from locate_iso step"
             exit 1
           fi
+
+          echo "Signing ISO at $ISO"
+          echo "${{ secrets.GITHUB_TOKEN }}" | cosign login ghcr.io -u ${{ github.repository_owner }} --password-stdin
+          cosign sign-blob --yes "$ISO" --output-signature "$ISO.sig"
+          echo "Signed $ISO -> $ISO.sig"
 
       - name: Upload ISO + signature
         uses: actions/upload-artifact@v4
         with:
           name: chelipeds-iso-43
           path: |
-            output/*.iso
-            output/*.iso.sig
+            ${{ steps.locate_iso.outputs.iso }}
+            ${{ steps.locate_iso.outputs.iso }}.sig
 
       # (optional) upload to Cloudflare R2
       # - name: Install rclone
