@@ -106,11 +106,15 @@ jobs:
           cosign sign --yes --recursive $IMAGE@$DIGEST_DATE_TAG
 
   build-iso:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runner }}
     needs: create-manifests
     strategy:
       matrix:
-        arch: [amd64, arm64]
+        include:
+          - arch: amd64
+            runner: ubuntu-latest
+          - arch: arm64
+            runner: ubuntu-22.04-arm64
     permissions:
       contents: write
       packages: write
