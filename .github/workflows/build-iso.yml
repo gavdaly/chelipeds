@@ -108,6 +108,9 @@ jobs:
   build-iso:
     runs-on: ubuntu-latest
     needs: create-manifests
+    strategy:
+      matrix:
+        arch: [amd64, arm64]
     permissions:
       contents: write
       packages: write
@@ -129,12 +132,12 @@ jobs:
 
       - name: Pull target image
         run: |
-          sudo podman pull $IMAGE:${TAG}-amd64
+          sudo podman pull $IMAGE:${TAG}-${{ matrix.arch }}
 
-      - name: Build bootable ISO (amd64)
+      - name: Build bootable ISO (${{ matrix.arch }})
         run: |
           mkdir -p output
-          echo "Starting bootc-image-builder with image: $IMAGE:${TAG}-amd64"
+          echo "Starting bootc-image-builder with image: $IMAGE:${TAG}-${{ matrix.arch }}"
           echo "Output directory: ${{ github.workspace }}/output"
 
           # Run bootc-image-builder with verbose output
@@ -145,7 +148,7 @@ jobs:
             quay.io/centos-bootc/bootc-image-builder:latest \
             --type iso \
             --rootfs ext4 \
-            $IMAGE:${TAG}-amd64 || {
+            $IMAGE:${TAG}-${{ matrix.arch }} || {
               echo "bootc-image-builder failed with exit code $?"
               echo "Checking container logs and output directory..."
               ls -la ${{ github.workspace }}/output/
@@ -165,12 +168,12 @@ jobs:
           echo "Contents of output directory:"
           if [ -d output ]; then
             ls -la output/
-            find output -maxdepth 3 -type f -print
+            find output -maxdepth 5 -type f -print
           else
             echo "Output directory is empty or doesn't exist"
           fi
 
-      - name: Locate ISO artifact
+      - name: Locate ISO artifacts
         id: locate_iso
         run: |
           if [ ! -d output ]; then
@@ -178,7 +181,7 @@ jobs:
             exit 1
           fi
 
-          ISO_LIST=$(find output -maxdepth 4 -type f -name '*.iso' -print | sort)
+          ISO_LIST=$(find output -maxdepth 5 -type f -name '*.iso' -print | sort)
           if [ -z "$ISO_LIST" ]; then
             echo "No ISO file found under output/"
             find output -maxdepth 4 -type f -print || true
@@ -186,24 +189,25 @@ jobs:
           fi
 
           printf 'Found ISO files:\n%s\n' "$ISO_LIST"
-          printf 'iso_list<<EOF\n%s\nEOF\n' "$ISO_LIST" >> "$GITHUB_OUTPUT"
-
-          SIG_LIST=$(printf '%s\n' "$ISO_LIST" | sed 's/$/.sig/')
-          printf 'sig_list<<EOF\n%s\nEOF\n' "$SIG_LIST" >> "$GITHUB_OUTPUT"
+          printf '%s\n' "$ISO_LIST" > output/iso-files.txt
+          printf '%s\n' "$ISO_LIST" | sed 's,$,.sig,' > output/iso-sigs.txt
+          cat output/iso-files.txt
+          cat output/iso-sigs.txt
+          echo "iso_list_file=output/iso-files.txt" >> "$GITHUB_OUTPUT"
 
       - name: Cosign sign ISO
         env:
           COSIGN_EXPERIMENTAL: "1"
         run: |
-          ISO_LIST="${{ steps.locate_iso.outputs.iso_list }}"
-          if [ -z "$ISO_LIST" ]; then
-            echo "ISO paths missing from locate_iso step"
+          ISO_LIST_FILE="${{ steps.locate_iso.outputs.iso_list_file }}"
+          if [ -z "$ISO_LIST_FILE" ] || [ ! -f "$ISO_LIST_FILE" ]; then
+            echo "ISO list file missing from locate_iso step"
             exit 1
           fi
 
           echo "${{ secrets.GITHUB_TOKEN }}" | cosign login ghcr.io -u ${{ github.repository_owner }} --password-stdin
 
-          printf '%s\n' "$ISO_LIST" | while IFS= read -r ISO; do
+          while IFS= read -r ISO; do
             [ -z "$ISO" ] && continue
             SIG="${ISO}.sig"
             echo "Signing ISO at $ISO"
@@ -214,15 +218,15 @@ jobs:
             fi
             ls -la "$(dirname "$SIG")"
             echo "Signed $ISO -> $SIG"
-          done
+          done < "$ISO_LIST_FILE"
 
       - name: Upload ISO + signature
         uses: actions/upload-artifact@v4
         with:
-          name: chelipeds-iso-43
+          name: chelipeds-iso-43-${{ matrix.arch }}
           path: |
-            ${{ steps.locate_iso.outputs.iso_list }}
-            ${{ steps.locate_iso.outputs.sig_list }}
+            output/**/*.iso
+            output/**/*.iso.sig
 
       # (optional) upload to Cloudflare R2
       # - name: Install rclone
