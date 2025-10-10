@@ -187,6 +187,7 @@ jobs:
 
           echo "Found ISO at $ISO"
           echo "iso=$ISO" >> "$GITHUB_OUTPUT"
+          echo "sig=${ISO}.sig" >> "$GITHUB_OUTPUT"
 
       - name: Cosign sign ISO
         env:
@@ -198,10 +199,17 @@ jobs:
             exit 1
           fi
 
+          SIG="${{ steps.locate_iso.outputs.sig }}"
+
           echo "Signing ISO at $ISO"
           echo "${{ secrets.GITHUB_TOKEN }}" | cosign login ghcr.io -u ${{ github.repository_owner }} --password-stdin
-          cosign sign-blob --yes "$ISO" --output-signature "$ISO.sig"
-          echo "Signed $ISO -> $ISO.sig"
+          cosign sign-blob --yes "$ISO" --output-signature "$SIG"
+          if [ ! -f "$SIG" ]; then
+            echo "Expected signature missing at $SIG"
+            exit 1
+          fi
+          ls -la "$(dirname "$SIG")"
+          echo "Signed $ISO -> $SIG"
 
       - name: Upload ISO + signature
         uses: actions/upload-artifact@v4
@@ -209,7 +217,7 @@ jobs:
           name: chelipeds-iso-43
           path: |
             ${{ steps.locate_iso.outputs.iso }}
-            ${{ steps.locate_iso.outputs.iso }}.sig
+            ${{ steps.locate_iso.outputs.sig }}
 
       # (optional) upload to Cloudflare R2
       # - name: Install rclone
