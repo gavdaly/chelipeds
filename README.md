@@ -1,21 +1,20 @@
-# Chelipeds — Fedora 42 Hyprland Dev ISO
+# Chelipeds — Fedora 43 Hyprland Dev ISO
 
-Custom rpm-ostree image with Hyprland + dev tooling.
+![crab typing](cheliped_cover.avif)
+
+Custom rpm-ostree image with Niri + dev tooling.
 
 ## What you get
 
-- Hyprland, Waybar, Wofi, MakO notifications
+- Niri, Waybar, Wofi, MakO notifications
 - Dev stack: gcc/clang/cmake/ninja/neovim/git
 - Containers: podman/buildah/skopeo/toolbox/distrobox
-- Terminals: Ghostty + Kitty
-- Flatpak + Flathub + GNOME Software (GUI store)
-- Flatpaks preinstalled: Chromium, Zed, VS Code
-- Flatpak overrides (Wayland, GPU, $HOME)
-- CLI symlinks: `zed`, `code`
+- Terminals: Kitty
+- Flatpak + Flathub
+- Flatpaks preinstalled: Chromium, Zed
 
 ## Paths
 
-- Config (Butane JSON): `configs/chelipeds-hyperland-dev.json`
 - CI workflow: `.github/workflows/build-iso.yml`
 - Local build scripts: `scripts/`
 
