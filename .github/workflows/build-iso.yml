@@ -178,46 +178,51 @@ jobs:
             exit 1
           fi
 
-          ISO=$(find output -maxdepth 4 -type f -name '*.iso' | head -n1)
-          if [ -z "$ISO" ]; then
+          ISO_LIST=$(find output -maxdepth 4 -type f -name '*.iso' -print | sort)
+          if [ -z "$ISO_LIST" ]; then
             echo "No ISO file found under output/"
             find output -maxdepth 4 -type f -print || true
             exit 1
           fi
 
-          echo "Found ISO at $ISO"
-          echo "iso=$ISO" >> "$GITHUB_OUTPUT"
-          echo "sig=${ISO}.sig" >> "$GITHUB_OUTPUT"
+          printf 'Found ISO files:\n%s\n' "$ISO_LIST"
+          printf 'iso_list<<EOF\n%s\nEOF\n' "$ISO_LIST" >> "$GITHUB_OUTPUT"
+
+          SIG_LIST=$(printf '%s\n' "$ISO_LIST" | sed 's/$/.sig/')
+          printf 'sig_list<<EOF\n%s\nEOF\n' "$SIG_LIST" >> "$GITHUB_OUTPUT"
 
       - name: Cosign sign ISO
         env:
           COSIGN_EXPERIMENTAL: "1"
         run: |
-          ISO="${{ steps.locate_iso.outputs.iso }}"
-          if [ -z "$ISO" ]; then
-            echo "ISO path missing from locate_iso step"
+          ISO_LIST="${{ steps.locate_iso.outputs.iso_list }}"
+          if [ -z "$ISO_LIST" ]; then
+            echo "ISO paths missing from locate_iso step"
             exit 1
           fi
 
-          SIG="${{ steps.locate_iso.outputs.sig }}"
-
-          echo "Signing ISO at $ISO"
           echo "${{ secrets.GITHUB_TOKEN }}" | cosign login ghcr.io -u ${{ github.repository_owner }} --password-stdin
-          cosign sign-blob --yes "$ISO" --output-signature "$SIG"
-          if [ ! -f "$SIG" ]; then
-            echo "Expected signature missing at $SIG"
-            exit 1
-          fi
-          ls -la "$(dirname "$SIG")"
-          echo "Signed $ISO -> $SIG"
+
+          printf '%s\n' "$ISO_LIST" | while IFS= read -r ISO; do
+            [ -z "$ISO" ] && continue
+            SIG="${ISO}.sig"
+            echo "Signing ISO at $ISO"
+            cosign sign-blob --yes "$ISO" --output-signature "$SIG"
+            if [ ! -f "$SIG" ]; then
+              echo "Expected signature missing at $SIG"
+              exit 1
+            fi
+            ls -la "$(dirname "$SIG")"
+            echo "Signed $ISO -> $SIG"
+          done
 
       - name: Upload ISO + signature
         uses: actions/upload-artifact@v4
         with:
           name: chelipeds-iso-43
           path: |
-            ${{ steps.locate_iso.outputs.iso }}
-            ${{ steps.locate_iso.outputs.sig }}
+            ${{ steps.locate_iso.outputs.iso_list }}
+            ${{ steps.locate_iso.outputs.sig_list }}
 
       # (optional) upload to Cloudflare R2
       # - name: Install rclone
