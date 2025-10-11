@@ -234,26 +234,21 @@ jobs:
             output/**/*.iso.sig
 
       - name: Install rclone
-        if: ${{ secrets.R2_BUCKET != '' && secrets.R2_ACCESS_KEY_ID != '' && secrets.R2_SECRET_ACCESS_KEY != '' && secrets.R2_ACCOUNT_ID != '' }}
+        if: ${{ secrets.R2_ACCESS_KEY_ID != '' && secrets.R2_SECRET_ACCESS_KEY != '' && secrets.R2_ACCOUNT_ID != '' }}
         run: curl https://rclone.org/install.sh | sudo bash
       - name: Upload ISO to Cloudflare R2
-        if: ${{ secrets.R2_BUCKET != '' && secrets.R2_ACCESS_KEY_ID != '' && secrets.R2_SECRET_ACCESS_KEY != '' && secrets.R2_ACCOUNT_ID != '' }}
+        if: ${{ secrets.R2_ACCESS_KEY_ID != '' && secrets.R2_SECRET_ACCESS_KEY != '' && secrets.R2_ACCOUNT_ID != '' }}
         env:
           RCLONE_CONFIG_R2_TYPE: s3
           RCLONE_CONFIG_R2_PROVIDER: Cloudflare
           RCLONE_CONFIG_R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           RCLONE_CONFIG_R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           RCLONE_CONFIG_R2_ENDPOINT: https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
-          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          R2_BUCKET: chelipeds
         run: |
           set -euo pipefail
 
           ISO_LIST_FILE="${{ steps.locate_iso.outputs.iso_list_file }}"
-
-          if [ -z "${R2_BUCKET:-}" ]; then
-            echo "R2_BUCKET secret not set; cannot upload artifacts"
-            exit 1
-          fi
 
           if [ -z "${RCLONE_CONFIG_R2_ACCESS_KEY_ID:-}" ] || [ -z "${RCLONE_CONFIG_R2_SECRET_ACCESS_KEY:-}" ]; then
             echo "Required R2 credentials are missing"
