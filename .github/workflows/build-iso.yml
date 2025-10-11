@@ -234,8 +234,10 @@ jobs:
             output/**/*.iso.sig
 
       - name: Install rclone
+        if: ${{ secrets.R2_BUCKET != '' && secrets.R2_ACCESS_KEY_ID != '' && secrets.R2_SECRET_ACCESS_KEY != '' && secrets.R2_ACCOUNT_ID != '' }}
         run: curl https://rclone.org/install.sh | sudo bash
       - name: Upload ISO to Cloudflare R2
+        if: ${{ secrets.R2_BUCKET != '' && secrets.R2_ACCESS_KEY_ID != '' && secrets.R2_SECRET_ACCESS_KEY != '' && secrets.R2_ACCOUNT_ID != '' }}
         env:
           RCLONE_CONFIG_R2_TYPE: s3
           RCLONE_CONFIG_R2_PROVIDER: Cloudflare
