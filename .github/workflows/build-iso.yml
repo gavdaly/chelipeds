@@ -13,7 +13,7 @@ jobs:
       id-token: write
     strategy:
       matrix:
-        arch: [amd64, arm64]
+        arch: [amd64]
     env:
       IMAGE: ghcr.io/${{ github.repository_owner }}/chelipeds
       TAG: "43"
@@ -56,6 +56,7 @@ jobs:
     env:
       IMAGE: ghcr.io/${{ github.repository_owner }}/chelipeds
       TAG: "43"
+      ARCH_LIST: "amd64"
     steps:
       - name: Compute date tag
         id: vars
@@ -73,12 +74,14 @@ jobs:
       - name: Create manifest lists
         run: |
           podman manifest create $IMAGE:${TAG}
-          podman manifest add $IMAGE:${TAG} $IMAGE:${TAG}-amd64
-          podman manifest add $IMAGE:${TAG} $IMAGE:${TAG}-arm64
+          for ARCH in $ARCH_LIST; do
+            podman manifest add $IMAGE:${TAG} $IMAGE:${TAG}-$ARCH
+          done
 
           podman manifest create $IMAGE:${TAG}-${DATE_TAG}
-          podman manifest add $IMAGE:${TAG}-${DATE_TAG} $IMAGE:${TAG}-${DATE_TAG}-amd64
-          podman manifest add $IMAGE:${TAG}-${DATE_TAG} $IMAGE:${TAG}-${DATE_TAG}-arm64
+          for ARCH in $ARCH_LIST; do
+            podman manifest add $IMAGE:${TAG}-${DATE_TAG} $IMAGE:${TAG}-${DATE_TAG}-$ARCH
+          done
 
       - name: Push manifest lists
         run: |
@@ -113,8 +116,6 @@ jobs:
         include:
           - arch: amd64
             runner: ubuntu-latest
-          - arch: arm64
-            runner: ubuntu-22.04-arm64
     permissions:
       contents: write
       packages: write
@@ -232,17 +233,16 @@ jobs:
             output/**/*.iso
             output/**/*.iso.sig
 
-      # (optional) upload to Cloudflare R2
-      # - name: Install rclone
-      #   run: curl https://rclone.org/install.sh | sudo bash
-      # - name: Upload ISO to Cloudflare R2
-      #   env:
-      #     RCLONE_CONFIG_R2_TYPE: s3
-      #     RCLONE_CONFIG_R2_PROVIDER: Cloudflare
-      #     RCLONE_CONFIG_R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-      #     RCLONE_CONFIG_R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-      #     RCLONE_CONFIG_R2_ENDPOINT: https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
-      #     R2_BUCKET: ${{ secrets.R2_BUCKET }}
-      #   run: |
-      #     rclone copy output/*.iso r2:${R2_BUCKET}/chelipeds/
-      #     rclone copy output/*.iso.sig r2:${R2_BUCKET}/chelipeds/
+      - name: Install rclone
+        run: curl https://rclone.org/install.sh | sudo bash
+      - name: Upload ISO to Cloudflare R2
+        env:
+          RCLONE_CONFIG_R2_TYPE: s3
+          RCLONE_CONFIG_R2_PROVIDER: Cloudflare
+          RCLONE_CONFIG_R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          RCLONE_CONFIG_R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          RCLONE_CONFIG_R2_ENDPOINT: https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+        run: |
+          rclone copy output/*.iso r2:${R2_BUCKET}/chelipeds/
+          rclone copy output/*.iso.sig r2:${R2_BUCKET}/chelipeds/
