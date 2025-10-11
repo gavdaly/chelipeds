@@ -58,3 +58,10 @@ RUN install -d /etc/systemd/user/default.target.wants \
 
 # --- Flatpak: Flathub ---
 RUN flatpak --system remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+
+# --- Install bats (testing framework) ---
+RUN git clone https://github.com/bats-core/bats-core.git /tmp/bats-core && \
+    cd /tmp/bats-core && \
+    ./install.sh /usr/local && \
+    rm -rf /tmp/bats-core
+

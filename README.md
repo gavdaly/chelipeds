@@ -16,7 +16,6 @@ Custom rpm-ostree image with Niri + dev tooling.
 ## Paths
 
 - CI workflow: `.github/workflows/build-iso.yml`
-- Local build scripts: `scripts/`
 
 ## Cloud build (GitHub Actions → R2)
 
