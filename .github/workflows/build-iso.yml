@@ -283,7 +283,6 @@ jobs:
             output/**/*.iso.sig
 
       - name: Verify R2 Secrets for Upload
-        if: ${{ env.R2_ACCESS_KEY_ID != '' && env.R2_SECRET_ACCESS_KEY != '' && env.R2_ACCOUNT_ID != '' }}
         run: |
           if [ -z "${R2_ACCESS_KEY_ID}" ]; then
             echo "::error::R2_ACCESS_KEY_ID is not set."
