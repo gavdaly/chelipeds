@@ -25,14 +25,11 @@ jobs:
         with:
           path: |
             /var/cache/apt/archives
-            /var/lib/apt/lists
-            /var/lib/containers/storage
           key: ${{ runner.os }}-deps-${{ hashFiles('Containerfile', '.github/workflows/build-iso.yml') }}
           restore-keys: |
             ${{ runner.os }}-deps-
 
       - name: Compute date tag
-        id: vars
         run: echo "DATE_TAG=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
 
       - name: Install Podman + QEMU
@@ -42,7 +39,7 @@ jobs:
 
       - name: Login to GHCR
         run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | podman login ghcr.io -u ${{ github.repository_owner }} --password-stdin
+          echo "${{ secrets.GITHUB_TOKEN }}" | podman login ghcr.io -u ${{ github.actor }} --password-stdin
 
       - name: Build ${{ matrix.arch }}
         run: |
@@ -78,13 +75,11 @@ jobs:
         with:
           path: |
             /var/cache/apt/archives
-            /var/lib/apt/lists
           key: ${{ runner.os }}-deps-manifests-${{ hashFiles('.github/workflows/build-iso.yml') }}
           restore-keys: |
             ${{ runner.os }}-deps-manifests-
 
       - name: Compute date tag
-        id: vars
         run: echo "DATE_TAG=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
 
       - name: Install Podman and Skopeo
@@ -94,30 +89,30 @@ jobs:
 
       - name: Login to GHCR
         run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | podman login ghcr.io -u ${{ github.repository_owner }} --password-stdin
+          echo "${{ secrets.GITHUB_TOKEN }}" | podman login ghcr.io -u ${{ github.actor }} --password-stdin
 
       - name: Create manifest lists
         run: |
           podman manifest create $IMAGE:${TAG}
           for ARCH in $ARCH_LIST; do
-            podman manifest add $IMAGE:${TAG} $IMAGE:${TAG}-$ARCH
+            podman manifest add $IMAGE:${TAG} docker://$IMAGE:${TAG}-$ARCH
           done
 
           podman manifest create $IMAGE:${TAG}-${DATE_TAG}
           for ARCH in $ARCH_LIST; do
-            podman manifest add $IMAGE:${TAG}-${DATE_TAG} $IMAGE:${TAG}-${DATE_TAG}-$ARCH
+            podman manifest add $IMAGE:${TAG}-${DATE_TAG} docker://$IMAGE:${TAG}-${DATE_TAG}-$ARCH
           done
 
           podman manifest create $IMAGE:latest
           for ARCH in $ARCH_LIST; do
-            podman manifest add $IMAGE:latest $IMAGE:latest-$ARCH
+            podman manifest add $IMAGE:latest docker://$IMAGE:latest-$ARCH
           done
 
       - name: Push manifest lists
         run: |
-          podman manifest push $IMAGE:${TAG}
-          podman manifest push $IMAGE:${TAG}-${DATE_TAG}
-          podman manifest push $IMAGE:latest
+          podman manifest push --all $IMAGE:${TAG} docker://$IMAGE:${TAG}
+          podman manifest push --all $IMAGE:${TAG}-${DATE_TAG} docker://$IMAGE:${TAG}-${DATE_TAG}
+          podman manifest push --all $IMAGE:latest docker://$IMAGE:latest
 
       - name: Get manifest digests
         run: |
@@ -138,7 +133,7 @@ jobs:
         env:
           COSIGN_EXPERIMENTAL: "1"
         run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | cosign login ghcr.io -u ${{ github.repository_owner }} --password-stdin
+          echo "${{ secrets.GITHUB_TOKEN }}" | cosign login ghcr.io -u ${{ github.actor }} --password-stdin
           cosign sign --yes --recursive $IMAGE@$DIGEST_TAG
           cosign sign --yes --recursive $IMAGE@$DIGEST_DATE_TAG
           cosign sign --yes --recursive $IMAGE@$DIGEST_LATEST
@@ -169,11 +164,10 @@ jobs:
         with:
           path: |
             /var/cache/apt/archives
-            /var/lib/apt/lists
             /var/lib/containers/storage
-          key: ${{ runner.os }}-deps-${{ hashFiles('Containerfile', '.github/workflows/build-iso.yml') }}
+          key: ${{ runner.os }}-deps-iso-${{ hashFiles('Containerfile', '.github/workflows/build-iso.yml') }}
           restore-keys: |
-            ${{ runner.os }}-deps-
+            ${{ runner.os }}-deps-iso-
 
       - name: Install Podman
         run: |
@@ -182,7 +176,7 @@ jobs:
 
       - name: Login to GHCR
         run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | podman login ghcr.io -u ${{ github.repository_owner }} --password-stdin
+          echo "${{ secrets.GITHUB_TOKEN }}" | sudo podman login ghcr.io -u ${{ github.actor }} --password-stdin
 
       - name: Pull target image
         run: |
@@ -194,7 +188,6 @@ jobs:
           echo "Starting bootc-image-builder with image: $IMAGE:${TAG}-${{ matrix.arch }}"
           echo "Output directory: ${{ github.workspace }}/output"
 
-          # Run bootc-image-builder with verbose output
           sudo podman run --privileged --rm \
             -v /var/lib/containers/storage:/var/lib/containers/storage \
             -v ${{ github.workspace }}/output:/output \
@@ -205,7 +198,7 @@ jobs:
             $IMAGE:${TAG}-${{ matrix.arch }} || {
               echo "bootc-image-builder failed with exit code $?"
               echo "Checking container logs and output directory..."
-              ls -la ${{ github.workspace }}/output/
+              ls -la ${{ github.workspace }}/output/ || true
               exit 1
             }
 
@@ -245,8 +238,6 @@ jobs:
           printf 'Found ISO files:\n%s\n' "$ISO_LIST"
           printf '%s\n' "$ISO_LIST" > output/iso-files.txt
           printf '%s\n' "$ISO_LIST" | sed 's,$,.sig,' > output/iso-sigs.txt
-          cat output/iso-files.txt
-          cat output/iso-sigs.txt
           echo "iso_list_file=output/iso-files.txt" >> "$GITHUB_OUTPUT"
 
       - name: Cosign sign ISO
@@ -259,7 +250,6 @@ jobs:
             exit 1
           fi
 
-          echo "${{ secrets.GITHUB_TOKEN }}" | cosign login ghcr.io -u ${{ github.repository_owner }} --password-stdin
 
           while IFS= read -r ISO; do
             [ -z "$ISO" ] && continue
@@ -270,7 +260,6 @@ jobs:
               echo "Expected signature missing at $SIG"
               exit 1
             fi
-            ls -la "$(dirname "$SIG")"
             echo "Signed $ISO -> $SIG"
           done < "$ISO_LIST_FILE"
 
@@ -313,12 +302,6 @@ jobs:
           set -euo pipefail
 
           ISO_LIST_FILE="${{ steps.locate_iso.outputs.iso_list_file }}"
-
-          if [ -z "${RCLONE_CONFIG_R2_ACCESS_KEY_ID:-}" ] || [ -z "${RCLONE_CONFIG_R2_SECRET_ACCESS_KEY:-}" ]; then
-            echo "Required R2 credentials are missing"
-            exit 1
-          fi
-
           if [ -z "${ISO_LIST_FILE:-}" ] || [ ! -f "$ISO_LIST_FILE" ]; then
             echo "ISO list file missing; expected path: $ISO_LIST_FILE"
             exit 1
