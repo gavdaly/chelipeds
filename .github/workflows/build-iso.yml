@@ -137,7 +137,6 @@ jobs:
         env:
           COSIGN_EXPERIMENTAL: "1"
         run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | cosign login ghcr.io -u ${{ github.actor }} --password-stdin
           cosign sign --yes --recursive $IMAGE@$DIGEST_TAG
           cosign sign --yes --recursive $IMAGE@$DIGEST_DATE_TAG
           cosign sign --yes --recursive $IMAGE@$DIGEST_LATEST
@@ -150,6 +149,7 @@ jobs:
         include:
           - arch: amd64
             runner: ubuntu-latest
+    environment: Actions
     permissions:
       contents: write
       packages: write
@@ -263,7 +263,6 @@ jobs:
             echo "ISO list file missing from locate_iso step"
             exit 1
           fi
-
 
           while IFS= read -r ISO; do
             [ -z "$ISO" ] && continue
