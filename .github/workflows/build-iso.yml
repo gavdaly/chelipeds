@@ -288,8 +288,9 @@ jobs:
             SIG="${ISO}.sig"
             [ -f "$SIG" ] || { echo "Signature file '$SIG' not found"; exit 1; }
 
-            BASENAME=$(basename "$ISO")
-            SIG_BASENAME=$(basename "$SIG")
+            BASENAME="chelipeds-${TAG}-${{ matrix.arch }}.iso"
+            SIG_BASENAME="chelipeds-${TAG}-${{ matrix.arch }}.iso.sig"
+
 
             echo "Uploading $ISO to r2:${R2_BUCKET}/$BASENAME"
             rclone copyto --s3-no-check-bucket "$ISO" "r2:${R2_BUCKET}/$BASENAME"
