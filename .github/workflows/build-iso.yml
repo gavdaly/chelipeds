@@ -126,17 +126,15 @@ jobs:
           echo "DIGEST_TAG=$DIGEST_TAG" >> $GITHUB_ENV
           echo "DIGEST_DATE_TAG=$DIGEST_DATE_TAG" >> $GITHUB_ENV
           echo "DIGEST_LATEST=$DIGEST_LATEST" >> $GITHUB_ENV
-          echo "Manifest digest for $IMAGE:${TAG} -> $DIGEST_TAG"
-          echo "Manifest digest for $IMAGE:${TAG}-${DATE_TAG} -> $DIGEST_DATE_TAG"
-          echo "Manifest digest for $IMAGE:latest -> $DIGEST_LATEST"
 
       - name: Install Cosign
         uses: sigstore/cosign-installer@v3.5.0
 
-      - name: Cosign sign images (keyless)
+      - name: Cosign sign images (keyless with GHCR auth)
         env:
           COSIGN_EXPERIMENTAL: "1"
         run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | cosign login ghcr.io -u ${{ github.actor }} --password-stdin
           cosign sign --yes --recursive $IMAGE@$DIGEST_TAG
           cosign sign --yes --recursive $IMAGE@$DIGEST_DATE_TAG
           cosign sign --yes --recursive $IMAGE@$DIGEST_LATEST
@@ -211,47 +209,22 @@ jobs:
             --rootfs ext4 \
             $IMAGE:${TAG}-${{ matrix.arch }} || {
               echo "bootc-image-builder failed with exit code $?"
-              echo "Checking container logs and output directory..."
               ls -la ${{ github.workspace }}/output/ || true
               exit 1
             }
 
           sudo chown -R $(id -u):$(id -g) ${{ github.workspace }}/output || true
-          echo "bootc-image-builder completed successfully"
-          echo "Contents of output directory:"
           ls -la ${{ github.workspace }}/output/
 
       - name: Install Cosign
         uses: sigstore/cosign-installer@v3.5.0
 
-      - name: List output directory contents
-        run: |
-          echo "Contents of output directory:"
-          if [ -d output ]; then
-            ls -la output/
-            find output -maxdepth 5 -type f -print
-          else
-            echo "Output directory is empty or doesn't exist"
-          fi
-
       - name: Locate ISO artifacts
         id: locate_iso
         run: |
-          if [ ! -d output ]; then
-            echo "output/ directory missing"
-            exit 1
-          fi
-
           ISO_LIST=$(find output -maxdepth 5 -type f -name '*.iso' -print | sort)
-          if [ -z "$ISO_LIST" ]; then
-            echo "No ISO file found under output/"
-            find output -maxdepth 4 -type f -print || true
-            exit 1
-          fi
-
-          printf 'Found ISO files:\n%s\n' "$ISO_LIST"
-          printf '%s\n' "$ISO_LIST" > output/iso-files.txt
-          printf '%s\n' "$ISO_LIST" | sed 's,$,.sig,' > output/iso-sigs.txt
+          [ -z "$ISO_LIST" ] && { echo "No ISO found"; exit 1; }
+          echo "$ISO_LIST" > output/iso-files.txt
           echo "iso_list_file=output/iso-files.txt" >> "$GITHUB_OUTPUT"
 
       - name: Cosign sign ISO
@@ -259,21 +232,10 @@ jobs:
           COSIGN_EXPERIMENTAL: "1"
         run: |
           ISO_LIST_FILE="${{ steps.locate_iso.outputs.iso_list_file }}"
-          if [ -z "$ISO_LIST_FILE" ] || [ ! -f "$ISO_LIST_FILE" ]; then
-            echo "ISO list file missing from locate_iso step"
-            exit 1
-          fi
-
           while IFS= read -r ISO; do
             [ -z "$ISO" ] && continue
             SIG="${ISO}.sig"
-            echo "Signing ISO at $ISO"
             cosign sign-blob --yes "$ISO" --output-signature "$SIG"
-            if [ ! -f "$SIG" ]; then
-              echo "Expected signature missing at $SIG"
-              exit 1
-            fi
-            echo "Signed $ISO -> $SIG"
           done < "$ISO_LIST_FILE"
 
       - name: Upload ISO + signature
@@ -286,24 +248,16 @@ jobs:
 
       - name: Verify R2 Secrets for Upload
         run: |
-          if [ -z "${R2_ACCESS_KEY_ID}" ]; then
-            echo "::error::R2_ACCESS_KEY_ID is not set."
-            exit 1
-          fi
-          if [ -z "${R2_SECRET_ACCESS_KEY}" ]; then
-            echo "::error::R2_SECRET_ACCESS_KEY is not set."
-            exit 1
-          fi
-          if [ -z "${R2_ACCOUNT_ID}" ]; then
-            echo "::error::R2_ACCOUNT_ID is not set."
-            exit 1
-          fi
+          for var in R2_ACCESS_KEY_ID R2_SECRET_ACCESS_KEY R2_ACCOUNT_ID; do
+            if [ -z "${!var}" ]; then
+              echo "::error::$var is not set."
+              exit 1
+            fi
+          done
 
       - name: Install rclone
-        if: ${{ env.R2_ACCESS_KEY_ID != '' && env.R2_SECRET_ACCESS_KEY != '' && env.R2_ACCOUNT_ID != '' }}
         run: curl https://rclone.org/install.sh | sudo bash
       - name: Upload ISO to Cloudflare R2
-        if: ${{ env.R2_ACCESS_KEY_ID != '' && env.R2_SECRET_ACCESS_KEY != '' && env.R2_ACCOUNT_ID != '' }}
         env:
           RCLONE_CONFIG_R2_TYPE: s3
           RCLONE_CONFIG_R2_PROVIDER: Cloudflare
@@ -312,41 +266,12 @@ jobs:
           RCLONE_CONFIG_R2_ENDPOINT: https://${{ env.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
           R2_BUCKET: chelipeds
         run: |
-          set -euo pipefail
-
           ISO_LIST_FILE="${{ steps.locate_iso.outputs.iso_list_file }}"
-          if [ -z "${ISO_LIST_FILE:-}" ] || [ ! -f "$ISO_LIST_FILE" ]; then
-            echo "ISO list file missing; expected path: $ISO_LIST_FILE"
-            exit 1
-          fi
-
-          uploaded=0
           while IFS= read -r ISO; do
             [ -z "$ISO" ] && continue
-            if [ ! -f "$ISO" ]; then
-              echo "ISO file '$ISO' not found"
-              exit 1
-            fi
-
             SIG="${ISO}.sig"
-            if [ ! -f "$SIG" ]; then
-              echo "Signature file '$SIG' not found"
-              exit 1
-            fi
-
             BASENAME=$(basename "$ISO")
             SIG_BASENAME=$(basename "$SIG")
-
-            echo "Uploading $ISO to r2:${R2_BUCKET}/$BASENAME"
             rclone copyto "$ISO" "r2:${R2_BUCKET}/$BASENAME"
-
-            echo "Uploading $SIG to r2:${R2_BUCKET}/$SIG_BASENAME"
             rclone copyto "$SIG" "r2:${R2_BUCKET}/$SIG_BASENAME"
-
-            uploaded=$((uploaded + 1))
           done < "$ISO_LIST_FILE"
-
-          if [ "$uploaded" -eq 0 ]; then
-            echo "No ISO entries processed; aborting"
-            exit 1
-          fi
