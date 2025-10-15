@@ -15,10 +15,12 @@ jobs:
       matrix:
         arch: [amd64]
     env:
-      IMAGE: ghcr.io/${{ github.repository_owner }}/chelipeds
       TAG: "43"
     steps:
       - uses: actions/checkout@v4
+
+      - name: Set image name
+        run: echo "IMAGE=ghcr.io/$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')/chelipeds" >> $GITHUB_ENV
 
       - name: Cache dependencies
         uses: actions/cache@v4
@@ -64,11 +66,13 @@ jobs:
       packages: write
       id-token: write
     env:
-      IMAGE: ghcr.io/${{ github.repository_owner }}/chelipeds
       TAG: "43"
       ARCH_LIST: "amd64"
     steps:
       - uses: actions/checkout@v4
+
+      - name: Set image name
+        run: echo "IMAGE=ghcr.io/$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')/chelipeds" >> $GITHUB_ENV
 
       - name: Cache dependencies
         uses: actions/cache@v4
@@ -151,13 +155,23 @@ jobs:
       packages: write
       id-token: write
     env:
-      IMAGE: ghcr.io/${{ github.repository_owner }}/chelipeds
       TAG: "43"
       R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
       R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
       R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /usr/local/share/boost
+          sudo rm -rf $AGENT_TOOLSDIRECTORY
+
+      - name: Set image name
+        run: echo "IMAGE=ghcr.io/$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')/chelipeds" >> $GITHUB_ENV
 
       - name: Cache dependencies
         uses: actions/cache@v4
