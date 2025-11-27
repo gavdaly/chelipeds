@@ -2,11 +2,26 @@
 
 # This script installs a set of optional applications in userspace using Flatpak.
 
+# Source system tier detection
+if [ -f /usr/local/bin/check-system-tier.sh ]; then
+    source /usr/local/bin/check-system-tier.sh
+else
+    echo "Warning: check-system-tier.sh not found. Defaulting to MID tier."
+    export CHELIPEDS_SYSTEM_TIER="MID"
+fi
+
+echo "Installing userspace applications for tier: $CHELIPEDS_SYSTEM_TIER"
+
+
 # Development
 flatpak install --user -y --noninteractive io.podman_desktop.PodmanDesktop
 flatpak install --user -y --noninteractive org.wireshark.Wireshark
 flatpak install --user -y --noninteractive io.dbeaver.DBeaverCommunity
-flatpak install --user -y --noninteractive dev.zed.Zed
+if [ "$CHELIPEDS_HAS_VULKAN" = "true" ]; then
+    flatpak install --user -y --noninteractive dev.zed.Zed
+else
+    echo "Skipping Zed (dev.zed.Zed) - No Vulkan support detected."
+fi
 flatpak install --user -y --noninteractive rest.insomnia.Insomnia
 flatpak install --user -y --noninteractive com.visualstudio.code
 flatpak install --user -y --noninteractive sh.loft.devpod

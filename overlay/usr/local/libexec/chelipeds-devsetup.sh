@@ -21,3 +21,8 @@ curl https://get.volta.sh | bash -s -- -y || true
   fzf ripgrep fd-find eza zoxide btop \
   lazyjj macchina impala cliphist starship \
   bat git-delta tokei dua-cli dust broot procs hyperfine tealdeer xh gping zellij yazi || true
+
+# Install Userspace Apps (Flatpaks)
+echo "Installing userspace applications..."
+/usr/local/bin/install-userspace-apps.sh || true
+
