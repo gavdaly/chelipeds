@@ -6,6 +6,10 @@ on:
 env:
   IMAGE: ghcr.io/${{ github.repository_owner }}/chelipeds
   TAG: "44"
+  R2_ACCOUNT_ID: ${{ secrets.CF_R2_ACCOUNT_ID }}
+  R2_ACCESS_KEY_ID: ${{ secrets.CF_R2_ACCESS_KEY_ID }}
+  R2_SECRET_ACCESS_KEY: ${{ secrets.CF_R2_SECRET_ACCESS_KEY }}
+  R2_BUCKET: ${{ secrets.CF_R2_BUCKET }}
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -34,3 +38,23 @@ jobs:
         with:
           name: chelipeds-iso-fedora-44
           path: output/**/*.iso
+      - name: Prepare ISO checksums
+        run: |
+          iso=$(find output -type f -name '*.iso' -print -quit)
+          test -n "$iso"
+          sha256sum "$iso" > "$iso.sha256"
+          echo "ISO=$iso" >> "$GITHUB_ENV"
+      - name: Upload ISO to Cloudflare R2
+        env:
+          AWS_ACCESS_KEY_ID: ${{ env.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ env.R2_SECRET_ACCESS_KEY }}
+          AWS_EC2_METADATA_DISABLED: "true"
+        run: |
+          for name in R2_ACCOUNT_ID R2_ACCESS_KEY_ID R2_SECRET_ACCESS_KEY R2_BUCKET; do
+            test -n "${!name}" || { echo "Missing $name" >&2; exit 1; }
+          done
+          sudo apt-get update
+          sudo apt-get install -y awscli
+          endpoint="https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
+          aws --endpoint-url "$endpoint" s3 cp "$ISO" "s3://${R2_BUCKET}/iso/$(basename "$ISO")"
+          aws --endpoint-url "$endpoint" s3 cp "$ISO.sha256" "s3://${R2_BUCKET}/iso/$(basename "$ISO").sha256"
