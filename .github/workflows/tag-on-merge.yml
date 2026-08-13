@@ -1,0 +1,29 @@
+name: Tag merged pull requests
+
+on:
+  pull_request:
+    branches: [main]
+    types: [closed]
+
+permissions:
+  contents: write
+
+jobs:
+  tag:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create release tag on merge commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          tag="v44.${PR_NUMBER}"
+          git init .
+          git remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git fetch --no-tags origin "$MERGE_SHA"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$tag" "$MERGE_SHA" -m "Chelipeds Fedora 44 release $tag"
+          git push origin "$tag"

@@ -1,3 +1,3 @@
-- **ISOs**: Published on GitHub Releases.
-- **Ignition generator**: Client-side web tool to customize username + SSH keys.
-- **Updates**: Delivered through rpm-ostree rebases.
+- **ISOs**: Published on GitHub Releases and Cloudflare R2.
+- **PR completion tags**: Merging PR `#123` into `main` automatically creates the annotated tag `v44.123` on the merge commit.
+- **Updates**: Delivered through bootc image upgrades.
