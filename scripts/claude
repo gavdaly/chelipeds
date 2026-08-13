@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -euo pipefail
+if [[ ! -x /root/.volta/bin/claude ]]; then volta install @anthropic-ai/claude-cli; fi
+exec /root/.volta/bin/claude "$@"

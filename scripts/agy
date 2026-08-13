@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Antigravity CLI installer: https://antigravity.google/download#antigravity-cli
+install_path="$HOME/.local/bin/agy"
+if [[ ! -x "$install_path" ]]; then
+  command -v curl >/dev/null || { echo "curl is required to install Antigravity CLI" >&2; exit 127; }
+  curl -fsSL https://antigravity.google/cli/install.sh | bash
+fi
+
+[[ -x "$install_path" ]] || { echo "Antigravity CLI was not found at $install_path" >&2; exit 1; }
+exec "$install_path" "$@"

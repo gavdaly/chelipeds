@@ -1,0 +1,8 @@
+[Unit]
+Description=Daily dev tools update
+[Timer]
+OnCalendar=*-*-* 03:00:00
+Persistent=true
+Unit=update-tools.service
+[Install]
+WantedBy=timers.target

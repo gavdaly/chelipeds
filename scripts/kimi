@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Kimi Code installer: https://www.kimi.com/code/en
+install_path="$HOME/.local/bin/kimi"
+if [[ ! -x "$install_path" ]]; then
+  command -v curl >/dev/null || { echo "curl is required to install Kimi Code" >&2; exit 127; }
+  curl -fsSL https://code.kimi.com/kimi-code/install.sh | bash
+fi
+
+[[ -x "$install_path" ]] || { echo "Kimi Code was not found at $install_path" >&2; exit 1; }
+exec "$install_path" "$@"

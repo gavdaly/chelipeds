@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -euo pipefail
+if [[ ! -x /root/.volta/bin/gemini ]]; then volta install @google/gemini-cli; fi
+exec /root/.volta/bin/gemini "$@"

@@ -1,3 +1,5 @@
-- **ISOs**: Published on GitHub Releases.
-- **Ignition generator**: Client-side web tool to customize username + SSH keys.
-- **Updates**: Delivered through rpm-ostree rebases.
+- **Images**: Built from `Containerfile` with Fedora 44 bootc and pushed to GHCR.
+- **ISOs**: Generated with `bootc-image-builder` and uploaded as workflow artifacts.
+- **Configuration**: `bootc-config.json` is the installer customization template; provide a real user and SSH key at deployment time.
+- **Updates**: Delivered as bootc image upgrades. The system checks periodically, stages available updates, and notifies the user at graphical login.
+- **Release validation**: Run `bash -n scripts/*.sh`, `git diff --check`, `podman build -t chelipeds:dev .`, and `podman run --rm chelipeds:dev bootc status`.

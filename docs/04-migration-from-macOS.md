@@ -4,7 +4,7 @@ This section helps macOS users transition.
 - **Shortcuts**: Map macOS ⌘ to Ctrl-based bindings in Linux.
 - **App replacements**:
   - iTerm → Kitty / Ghostty
-  - Homebrew → rpm-ostree / Flatpak
+  - Homebrew → Fedora packages / Flatpak / Distrobox
   - Safari → Brave / Epiphany / Ladybird
   - Keychain → KeePassXC / passkey manager
 - **Data migration**: Use `rsync` or Syncthing.

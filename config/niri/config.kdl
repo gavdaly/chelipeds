@@ -1,0 +1,16 @@
+binds {
+  Mod+Return { spawn "ghostty" }
+  Mod+Alt+Return { spawn "ghostty" "-e" "/usr/local/bin/distrobox-shell.sh" "zellij" "attach" "dev" "--create" }
+  Mod+Shift+L { spawn "swaylock" "-f" "-c" "1A1410" "--effect-blur" "7x5" "--clock" "--indicator" }
+  Mod+Shift+S { spawn "sh" "-c" "grim -g \"$(slurp)\" - | wl-copy" }
+  Mod+Ctrl+S { spawn "sh" "-c" "mkdir -p ~/Pictures; grim -g \"$(slurp)\" ~/Pictures/screenshot-$(date +%Y%m%d-%H%M%S).png" }
+  Mod+Alt+S { spawn "sh" "-c" "grim - | wl-copy" }
+  Mod+Shift+R { spawn "/usr/local/bin/screenrecord-toggle.sh" }
+  Mod+Shift+O { spawn "/usr/local/bin/ocr-extract.sh" }
+  Mod+Ctrl+V { spawn "sh" "-c" "cliphist list | wofi --dmenu | cliphist decode | wl-copy" }
+  Mod+Ctrl+R { spawn "sh" "-c" "MIN=$(wofi --dmenu --prompt Minutes:); MSG=$(wofi --dmenu --prompt Message:); /usr/local/bin/reminder.sh \"$MIN\" \"$MSG\"" }
+  Mod+Ctrl+Alt+R { spawn "sh" "-c" "pgrep -af reminder.sh || echo 'No active reminders'" }
+  Mod+Ctrl+Shift+R { spawn "sh" "-c" "pkill -f reminder.sh; notify-send 'Reminders cleared'" }
+  F9 { spawn "voxtype" "record" }
+  Mod+Ctrl+X { spawn "voxtype" "toggle" }
+}
