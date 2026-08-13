@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2016
 set -euo pipefail
 box_name=dev
 if ! distrobox list --no-color 2>/dev/null | awk '{print $1}' | grep -qx "$box_name"; then
