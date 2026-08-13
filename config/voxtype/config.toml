@@ -1,0 +1,6 @@
+engine = "parakeet"
+
+[parakeet]
+model = "parakeet-tdt-0.6b-v2"
+model_type = "tdt"
+on_demand_loading = true

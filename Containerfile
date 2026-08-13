@@ -1,15 +1,14 @@
 # syntax=docker/dockerfile:1
 FROM quay.io/fedora/fedora-bootc:44 AS voxtype-builder
 RUN dnf -y install cargo rust alsa-lib-devel clang-devel cmake pkgconf-pkg-config wtype wl-clipboard git && dnf clean all
-RUN cargo install voxtype
+RUN cargo install voxtype --features parakeet
 
 FROM quay.io/fedora/fedora-bootc:44
 LABEL org.opencontainers.image.title="Chelipeds (Niri Dev)" org.opencontainers.image.version="44"
 RUN dnf -y upgrade && dnf -y install \
   niri waybar wofi mako swaylock-effects greetd tuigreet grim slurp wl-clipboard wf-recorder cliphist tesseract tesseract-langpack-eng wtype libnotify \
   xdg-desktop-portal-wlr xdg-desktop-portal-gtk ghostty kitty jetbrains-mono-fonts \
-  gcc gcc-c++ clang cmake ninja-build make neovim git gdb podman podman-compose podman-tui buildah skopeo crun toolbox distrobox \
-  fzf ripgrep fd-find bat yq eza gitui lazygit jj delta yazi nnn ranger broot dua-cli dust bottom btop bandwhich kmon just tokei tealdeer xh gping eva pastel hyperfine starship zellij lazydocker \
+  podman podman-compose buildah skopeo crun toolbox distrobox \
   mosh tailscale selinux-policy-targeted firewalld flatpak curl wget jq rsync chezmoi openssh-server NetworkManager-tui bluez blueman gnome-keyring polkit-lxqt \
   google-noto-sans-fonts google-noto-sans-cjk-fonts google-noto-emoji-fonts \
   && dnf clean all
@@ -19,13 +18,7 @@ COPY config/ /etc/skel/.config/
 COPY scripts/ /usr/local/bin/
 COPY systemd/ /etc/systemd/system/
 COPY bootc-config.json /etc/chelipeds/bootc-config.json
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable \
-  && /root/.cargo/bin/cargo install cargo-binstall cargo-edit cargo-watch cargo-nextest \
-  && curl https://get.volta.sh | bash \
-  && /root/.volta/bin/volta install node@lts typescript eslint prettier vite vitest \
-  && curl -LsSf https://astral.sh/uv/install.sh | sh \
-  && /root/.local/bin/uv python install 3.13 \
-  && mkdir -p /var/home /etc/systemd/user/default.target.wants /etc/systemd/system/multi-user.target.wants \
+RUN mkdir -p /var/home /etc/systemd/user/default.target.wants /etc/systemd/system/multi-user.target.wants \
   && chmod 755 /var/home \
   && find /usr/local/bin -type f -exec chmod +x {} + \
   && cp /etc/systemd/system/cliphist.service /etc/systemd/user/cliphist.service \
@@ -38,5 +31,5 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --de
   && ln -sf /etc/systemd/user/chelipeds-update-notify.service /etc/systemd/user/default.target.wants/chelipeds-update-notify.service \
   && ln -sf /etc/systemd/system/install-flatpaks.service /etc/systemd/system/multi-user.target.wants/install-flatpaks.service \
   && flatpak --system remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo \
-  && voxtype setup --download || true
-ENV PATH="/root/.cargo/bin:/root/.local/bin:/root/.volta/bin:${PATH}"
+  && voxtype setup onnx --enable || true
+ENV PATH="/root/.cargo/bin:/root/.local/bin:${PATH}"

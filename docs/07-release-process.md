@@ -3,3 +3,4 @@
 - **Configuration**: `bootc-config.json` is the installer customization template; provide a real user and SSH key at deployment time.
 - **Updates**: Delivered as bootc image upgrades. The system checks periodically, stages available updates, and notifies the user at graphical login.
 - **Release validation**: Run `bash -n scripts/*.sh`, `git diff --check`, `podman build -t chelipeds:dev .`, and `podman run --rm chelipeds:dev bootc status`.
+- **Artifacts**: CI signs the ISO with Cosign, uploads the ISO/checksum/signature to R2, and creates a versioned GitHub release.

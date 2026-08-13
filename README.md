@@ -12,9 +12,11 @@ Custom Fedora bootc image with Niri, developer tooling, and a warm dark `chelipe
 - Terminals: Ghostty (primary), Kitty (fallback), and Zellij; all automatically enter the `dev` Distrobox
 - Flatpak + Flathub
 - Flatpaks installed on first boot: Chromium, Zed, Obsidian, Typora, and Font Downloader
-- Dictation with Voxtype and lazy-installed AI CLIs: Claude, Codex, Gemini, Grok Build, Antigravity, and Kimi Code
+- Dictation with Voxtype using Parakeet TDT v2, plus lazy-installed AI CLIs: Claude, Codex, Gemini, Grok Build, Antigravity, and Kimi Code
 
 Terminal sessions are intentionally isolated from the immutable host. The first terminal launch creates an Ubuntu 24.04 `dev` Distrobox and installs the terminal/development baseline there. Host-level commands are limited to graphical, Wayland, systemd, and bootc integration tools.
+
+Node.js is managed with `mise` inside Distrobox. It handles Node, Python, Rust, and project-local CLI versions in one toolchain, replacing the earlier host-level Volta setup. Voxtype is configured for local Parakeet TDT v2; run `setup-voxtype-parakeet.sh` once after installation to download its model.
 
 ## Paths
 

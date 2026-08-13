@@ -15,6 +15,11 @@ if ! distrobox enter "$box_name" -- bash -lc 'test -f "$HOME/.chelipeds-dev-read
       neovim ripgrep fd-find bat fzf eza tmux zellij just htop btop \
       python3 python3-pip python3-venv shellcheck podman-compose \
       ca-certificates pkg-config
+    curl https://mise.run | sh
+    export PATH="$HOME/.local/bin:$PATH"
+    mise use --global node@lts python@3.13 rust@stable
+    mise use --global npm:typescript npm:eslint npm:prettier npm:vite npm:vitest
+    mise use --global cargo:cargo-binstall cargo:cargo-edit cargo:cargo-watch cargo:cargo-nextest
     touch "$HOME/.chelipeds-dev-ready"
   '
 fi
