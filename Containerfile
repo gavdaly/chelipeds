@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 FROM quay.io/fedora/fedora-bootc:44 AS voxtype-builder
-RUN dnf -y install cargo rust alsa-lib-devel clang-devel cmake pkgconf-pkg-config wtype wl-clipboard git && dnf clean all
+RUN dnf -y install cargo rust alsa-lib-devel clang-devel cmake openssl-devel pkgconf-pkg-config wtype wl-clipboard git && dnf clean all
 ENV CARGO_HOME=/var/tmp/chelipeds-cargo
 RUN mkdir -p "$CARGO_HOME" /usr/local/bin \
   && cargo install --root /usr/local --git https://github.com/peteonrails/voxtype.git --tag v0.7.5 voxtype --features parakeet \
