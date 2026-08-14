@@ -52,6 +52,7 @@ jobs:
           mkdir -p output
           image=$(echo "$IMAGE" | tr '[:upper:]' '[:lower:]')
           sudo podman run --privileged --rm --security-opt label=disable \
+            -v /var/lib/containers/storage:/var/lib/containers/storage \
             -v "$PWD/output:/output" \
             quay.io/centos-bootc/bootc-image-builder:latest \
             --type iso --rootfs ext4 --output /output "$image:$TAG"
