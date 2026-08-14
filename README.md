@@ -92,4 +92,3 @@ To apply a staged image update, run `sudo bootc upgrade` and reboot when conveni
 - SELinux (enforcing)
 - firewalld enabled
 - SSH + Mosh remote access
-- Tailscale VPN mesh
