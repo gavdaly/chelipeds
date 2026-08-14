@@ -48,7 +48,7 @@ jobs:
       - name: Validate Containerfile syntax
         run: |
           grep -q '^FROM ' Containerfile
-          grep -q 'bootc install' Containerfile
+          grep -q 'fedora-bootc:' Containerfile
           grep -q '^COPY overlay/' Containerfile
   build:
     runs-on: ubuntu-latest
