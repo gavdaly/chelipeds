@@ -14,7 +14,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - name: Cache ShellCheck packages
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.cache/apt
           key: shellcheck-ubuntu-${{ runner.os }}
@@ -59,7 +59,7 @@ jobs:
       - name: Install Podman
         run: sudo apt-get update && sudo apt-get install -y podman
       - name: Cache Podman layers
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: /var/lib/containers/storage
           key: podman-${{ runner.os }}-${{ hashFiles('Containerfile', 'overlay/**', 'scripts/**', 'config/**') }}
