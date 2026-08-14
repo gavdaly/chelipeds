@@ -3,6 +3,14 @@ FROM quay.io/fedora/fedora-bootc:44
 LABEL org.opencontainers.image.title="Chelipeds (Niri Dev)" org.opencontainers.image.version="44"
 RUN dnf -y upgrade \
   && dnf -y install --nogpgcheck --repofrompath "terra,https://repos.fyralabs.com/terra\$releasever" terra-release \
+  && terra_repo=$(find /etc/yum.repos.d -type f -name '*terra*.repo' -print -quit) \
+  && test -n "$terra_repo" \
+  && sed -i \
+    -e '/^[[:space:]]*metalink=/d' \
+    -e '/^[[:space:]]*mirrorlist=/d' \
+    -e 's#^[[:space:]]*baseurl=.*#baseurl=https://repos.fyralabs.com/terra\\$releasever#' \
+    "$terra_repo" \
+  && dnf clean all \
   && dnf -y install \
   niri waybar wofi mako swaylock greetd tuigreet grim slurp wl-clipboard wf-recorder cliphist tesseract tesseract-langpack-eng wtype libnotify \
   xdg-desktop-portal-wlr xdg-desktop-portal-gtk ghostty kitty jetbrains-mono-fonts \
