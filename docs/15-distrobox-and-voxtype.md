@@ -1,6 +1,6 @@
 # Distrobox and Voxtype
 
-Chelipeds keeps terminal and development workloads in the `dev` Distrobox. Ghostty, Kitty, and the Niri terminal bindings enter it automatically. The immutable host retains only desktop, Wayland, systemd, networking, and bootc integration packages.
+Chelipeds keeps terminal and development workloads in the `dev` Distrobox. Kitty and the Niri terminal bindings enter it automatically. The immutable host retains only desktop, Wayland, systemd, networking, and bootc integration packages.
 
 The first terminal launch creates an Ubuntu 24.04 container and installs the baseline tools. `mise` then manages Node.js, Python, Rust, and project CLIs inside the container. This keeps toolchains mutable without changing the bootc image.
 

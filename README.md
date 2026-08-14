@@ -9,7 +9,7 @@ Custom Fedora bootc image with Niri, developer tooling, and a warm dark `chelipe
 - Niri, Waybar, Wofi, Mako notifications, screenshots, recording, OCR, and clipboard history
 - Dev stack runs inside the `dev` Distrobox: gcc/clang/cmake/ninja/neovim/git and terminal tooling
 - Containers: podman/buildah/skopeo/toolbox/distrobox
-- Terminals: Ghostty (primary), Kitty (fallback), and Zellij; all automatically enter the `dev` Distrobox
+- Terminals: Kitty and Zellij; all automatically enter the `dev` Distrobox
 - Flatpak + Flathub
 - Flatpaks installed on first boot: Chromium, Zed, Obsidian, Typora, and Font Downloader
 - Dictation with Voxtype using Parakeet TDT v2, plus lazy-installed AI CLIs: Claude, Codex, Gemini, Grok Build, Antigravity, and Kimi Code
@@ -42,6 +42,9 @@ https://<CF_R2_PUBLIC_HOST>/iso/chelipeds-hyperland-dev-.sha256
 Requires Linux with Podman. The image build uses Fedora bootc; ISO generation uses `bootc-image-builder`.
 
 ```bash
+# The image expects the Parakeet-enabled Voxtype binary in the build context.
+cargo install --root "$PWD/voxtype-root" --git https://github.com/peteonrails/voxtype.git --tag v0.7.5 voxtype --features parakeet
+cp voxtype-root/bin/voxtype voxtype-bin
 podman build -t chelipeds:dev .
 podman run --rm chelipeds:dev bootc status
 ```
@@ -89,4 +92,3 @@ To apply a staged image update, run `sudo bootc upgrade` and reboot when conveni
 - SELinux (enforcing)
 - firewalld enabled
 - SSH + Mosh remote access
-- Tailscale VPN mesh
