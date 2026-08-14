@@ -13,7 +13,7 @@ RUN dnf -y upgrade \
   && dnf clean all \
   && dnf -y install \
   niri waybar wofi mako swaylock greetd tuigreet grim slurp wl-clipboard wf-recorder cliphist tesseract tesseract-langpack-eng wtype libnotify \
-  xdg-desktop-portal-wlr xdg-desktop-portal-gtk ghostty kitty jetbrains-mono-fonts \
+  xdg-desktop-portal-wlr xdg-desktop-portal-gtk kitty jetbrains-mono-fonts \
   podman podman-compose buildah skopeo crun toolbox distrobox \
   mosh tailscale selinux-policy-targeted firewalld flatpak curl wget jq rsync chezmoi openssh-server NetworkManager-tui bluez blueman gnome-keyring lxqt-policykit \
   google-noto-sans-fonts google-noto-sans-cjk-fonts google-noto-emoji-fonts \

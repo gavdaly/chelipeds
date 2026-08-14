@@ -9,7 +9,7 @@ Custom Fedora bootc image with Niri, developer tooling, and a warm dark `chelipe
 - Niri, Waybar, Wofi, Mako notifications, screenshots, recording, OCR, and clipboard history
 - Dev stack runs inside the `dev` Distrobox: gcc/clang/cmake/ninja/neovim/git and terminal tooling
 - Containers: podman/buildah/skopeo/toolbox/distrobox
-- Terminals: Ghostty (primary), Kitty (fallback), and Zellij; all automatically enter the `dev` Distrobox
+- Terminals: Kitty and Zellij; all automatically enter the `dev` Distrobox
 - Flatpak + Flathub
 - Flatpaks installed on first boot: Chromium, Zed, Obsidian, Typora, and Font Downloader
 - Dictation with Voxtype using Parakeet TDT v2, plus lazy-installed AI CLIs: Claude, Codex, Gemini, Grok Build, Antigravity, and Kimi Code
