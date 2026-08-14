@@ -8,9 +8,11 @@ RUN mkdir -p "$CARGO_HOME" /usr/local/bin \
 
 FROM quay.io/fedora/fedora-bootc:44
 LABEL org.opencontainers.image.title="Chelipeds (Niri Dev)" org.opencontainers.image.version="44"
-RUN dnf -y upgrade && dnf -y install \
+RUN dnf -y upgrade \
+  && dnf -y install --nogpgcheck --repofrompath "terra,https://repos.fyralabs.com/terra\$releasever" terra-release \
+  && dnf -y install \
   niri waybar wofi mako swaylock greetd tuigreet grim slurp wl-clipboard wf-recorder cliphist tesseract tesseract-langpack-eng wtype libnotify \
-  xdg-desktop-portal-wlr xdg-desktop-portal-gtk kitty jetbrains-mono-fonts \
+  xdg-desktop-portal-wlr xdg-desktop-portal-gtk ghostty kitty jetbrains-mono-fonts \
   podman podman-compose buildah skopeo crun toolbox distrobox \
   mosh tailscale selinux-policy-targeted firewalld flatpak curl wget jq rsync chezmoi openssh-server NetworkManager-tui bluez blueman gnome-keyring lxqt-policykit \
   google-noto-sans-fonts google-noto-sans-cjk-fonts google-noto-emoji-fonts \
