@@ -5,4 +5,5 @@
 - **Release validation**: Run `bash -n scripts/*.sh`, `git diff --check`, build the Parakeet-enabled `voxtype-bin`, then run `podman build -t chelipeds:dev .` and `podman run --rm chelipeds:dev bootc status`.
 - **CI parallelism**: GitHub Actions compiles Voxtype in a parallel job, caches Cargo dependencies and build output, and passes the resulting binary to the image job as an artifact. Branches publish only branch/commit image tags; R2 and releases run only from `main`.
 - **Scheduled refresh**: The build workflow also runs daily at 05:17 UTC on `main`, so Fedora bootc and repository package updates are incorporated even when Chelipeds has no source changes. Registry, ISO-builder, and R2 transfers retry transient failures; overlapping runs are cancelled.
+- **Branch builds**: Non-main branches build and smoke-test only their branch-tagged container image. ISO generation, ISO verification, R2 upload, and GitHub releases run only on `main`.
 - **Artifacts**: CI signs the ISO with Cosign, uploads the ISO/checksum/signature to R2, and creates a versioned GitHub release.

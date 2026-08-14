@@ -173,6 +173,7 @@ jobs:
   build-iso:
     runs-on: ubuntu-latest
     needs: build-image
+    if: github.ref == 'refs/heads/main'
     permissions: { contents: read, packages: read, id-token: write }
     steps:
       - uses: actions/checkout@v5
@@ -229,6 +230,7 @@ jobs:
   verify-iso:
     runs-on: ubuntu-latest
     needs: build-iso
+    if: github.ref == 'refs/heads/main'
     permissions: { contents: read }
     steps:
       - uses: actions/download-artifact@v8
