@@ -209,7 +209,7 @@ jobs:
           sudo chown -R "$(id -u):$(id -g)" output
           iso=$(find output -type f -name '*.iso' -print -quit)
           test -n "$iso"
-          sha256sum "$iso" > "$iso.sha256"
+          (cd "$(dirname "$iso")" && sha256sum "$(basename "$iso")" > "$(basename "$iso").sha256")
           echo "ISO=$iso" >> "$GITHUB_ENV"
       - name: Install Cosign
         uses: sigstore/cosign-installer@v3.9.0
