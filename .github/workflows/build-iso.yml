@@ -64,6 +64,7 @@ jobs:
           path: output/**/*.iso
       - name: Prepare ISO checksums
         run: |
+          sudo chown -R "$(id -u):$(id -g)" output
           iso=$(find output -type f -name '*.iso' -print -quit)
           test -n "$iso"
           sha256sum "$iso" > "$iso.sha256"
