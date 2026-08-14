@@ -121,6 +121,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release create "iso-44-${{ github.run_number }}" \
-            release-assets/install.iso release-assets/install.iso.sha256 release-assets/install.iso.sig \
+            release-assets/install.iso.sha256 release-assets/install.iso.sig \
             --title "Chelipeds Fedora 44 ISO ${{ github.run_number }}" \
+            --notes "The ISO is uploaded to Cloudflare R2. Download it from the configured R2 ISO endpoint and verify it with the attached SHA-256 checksum and Cosign signature." \
             --generate-notes
