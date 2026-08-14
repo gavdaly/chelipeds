@@ -51,6 +51,8 @@ jobs:
         run: |
           mkdir -p output
           image=$(echo "$IMAGE" | tr '[:upper:]' '[:lower:]')
+          echo "${{ secrets.GITHUB_TOKEN }}" | sudo podman login ghcr.io -u "${{ github.actor }}" --password-stdin
+          sudo podman pull "$image:$TAG"
           sudo podman run --privileged --rm --security-opt label=disable \
             -v /var/lib/containers/storage:/var/lib/containers/storage \
             -v "$PWD/output:/output" \
