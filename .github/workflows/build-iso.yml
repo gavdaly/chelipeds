@@ -79,19 +79,18 @@ jobs:
         run: cosign sign-blob --yes "$ISO" --output-signature "$ISO.sig"
       - name: Upload ISO to Cloudflare R2
         env:
-          AWS_ACCESS_KEY_ID: ${{ env.R2_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ env.R2_SECRET_ACCESS_KEY }}
-          AWS_EC2_METADATA_DISABLED: "true"
+          RCLONE_CONFIG_R2_TYPE: s3
+          RCLONE_CONFIG_R2_PROVIDER: Cloudflare
+          RCLONE_CONFIG_R2_ACCESS_KEY_ID: ${{ env.R2_ACCESS_KEY_ID }}
+          RCLONE_CONFIG_R2_SECRET_ACCESS_KEY: ${{ env.R2_SECRET_ACCESS_KEY }}
+          RCLONE_CONFIG_R2_ENDPOINT: https://${{ env.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
+          RCLONE_CONFIG_R2_NO_CHECK_BUCKET: "true"
+          RCLONE_CONFIG_R2_FORCE_PATH_STYLE: "true"
         run: |
           for name in R2_ACCOUNT_ID R2_ACCESS_KEY_ID R2_SECRET_ACCESS_KEY R2_BUCKET; do
             test -n "${!name}" || { echo "Missing $name" >&2; exit 1; }
           done
           curl -fsSL https://rclone.org/install.sh | sudo bash
-          rclone config create r2 s3 \
-            provider Cloudflare \
-            access_key_id "$R2_ACCESS_KEY_ID" \
-            secret_access_key "$R2_SECRET_ACCESS_KEY" \
-            endpoint "https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
           rclone copyto --s3-no-check-bucket "$ISO" "r2:${R2_BUCKET}/iso/$(basename "$ISO")"
           rclone copyto --s3-no-check-bucket "$ISO.sha256" "r2:${R2_BUCKET}/iso/$(basename "$ISO").sha256"
           rclone copyto --s3-no-check-bucket "$ISO.sig" "r2:${R2_BUCKET}/iso/$(basename "$ISO").sig"
