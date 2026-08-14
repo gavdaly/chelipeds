@@ -92,9 +92,9 @@ jobs:
             access_key_id "$R2_ACCESS_KEY_ID" \
             secret_access_key "$R2_SECRET_ACCESS_KEY" \
             endpoint "https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
-          rclone copyto "$ISO" "r2:${R2_BUCKET}/iso/$(basename "$ISO")"
-          rclone copyto "$ISO.sha256" "r2:${R2_BUCKET}/iso/$(basename "$ISO").sha256"
-          rclone copyto "$ISO.sig" "r2:${R2_BUCKET}/iso/$(basename "$ISO").sig"
+          rclone copyto --s3-no-check-bucket "$ISO" "r2:${R2_BUCKET}/iso/$(basename "$ISO")"
+          rclone copyto --s3-no-check-bucket "$ISO.sha256" "r2:${R2_BUCKET}/iso/$(basename "$ISO").sha256"
+          rclone copyto --s3-no-check-bucket "$ISO.sig" "r2:${R2_BUCKET}/iso/$(basename "$ISO").sig"
       - name: Publish GitHub release
         uses: softprops/action-gh-release@v2
         with:
