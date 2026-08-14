@@ -1,0 +1,8 @@
+[Unit]
+Description=Clipboard history daemon
+[Service]
+Type=simple
+ExecStart=/usr/bin/wl-paste --watch /usr/bin/cliphist store
+Restart=on-failure
+[Install]
+WantedBy=default.target

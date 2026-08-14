@@ -1,264 +1,83 @@
-name: Build, Push & Sign (bootc 43) + ISO (multi-arch)
+name: Build, push, and publish ISO
 on:
   push:
-    branches: [main]
+    branches: [main, feat/update-version-bootc]
   workflow_dispatch:
-
+env:
+  IMAGE: ghcr.io/${{ github.repository_owner }}/chelipeds
+  TAG: "44"
 jobs:
-  build-images:
+  validate:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      packages: write
-      id-token: write
-    strategy:
-      matrix:
-        arch: [amd64]
-    env:
-      TAG: "43"
+    permissions: { contents: read }
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Set image name
-        run: echo "IMAGE=ghcr.io/$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')/chelipeds" >> $GITHUB_ENV
-
-      - name: Cache dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            /var/cache/apt/archives
-          key: ${{ runner.os }}-deps-${{ hashFiles('Containerfile', '.github/workflows/build-iso.yml') }}
-          restore-keys: |
-            ${{ runner.os }}-deps-
-
-      - name: Compute date tag
-        run: echo "DATE_TAG=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
-
-      - name: Install Podman + QEMU
+      - uses: actions/checkout@v5
+      - name: Validate scripts and metadata
         run: |
           sudo apt-get update
-          sudo apt-get install -y podman qemu-user-static
-
-      - name: Login to GHCR
-        run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | podman login ghcr.io -u ${{ github.actor }} --password-stdin
-
-      - name: Build ${{ matrix.arch }}
-        run: |
-          podman build \
-            --platform linux/${{ matrix.arch }} \
-            -t $IMAGE:${TAG}-${{ matrix.arch }} \
-            -t $IMAGE:${TAG}-${DATE_TAG}-${{ matrix.arch }} \
-            -t $IMAGE:latest-${{ matrix.arch }} \
-            .
-
-      - name: Push ${{ matrix.arch }} images
-        run: |
-          podman push $IMAGE:${TAG}-${{ matrix.arch }}
-          podman push $IMAGE:${TAG}-${DATE_TAG}-${{ matrix.arch }}
-          podman push $IMAGE:latest-${{ matrix.arch }}
-
-  create-manifests:
+          sudo apt-get install -y shellcheck
+          find scripts -type f -print0 | xargs -0 -n1 bash -n
+          find scripts -type f -print0 | xargs -0 shellcheck
+          python3 -m json.tool bootc-config.json >/dev/null
+          for unit in systemd/*.service systemd/*.timer; do
+            grep -q '^\[Unit\]' "$unit"
+            grep -q '^\[Service\]\|^\[Timer\]' "$unit"
+          done
+          for script in notify-update-on-login.sh install-flatpaks.sh update-tools.sh; do
+            test -f "scripts/$script" || test -f "overlay/usr/local/bin/$script"
+          done
+          git diff --check
+  build:
     runs-on: ubuntu-latest
-    needs: build-images
-    permissions:
-      contents: write
-      packages: write
-      id-token: write
-    env:
-      TAG: "43"
-      ARCH_LIST: "amd64"
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set image name
-        run: echo "IMAGE=ghcr.io/$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')/chelipeds" >> $GITHUB_ENV
-
-      - name: Cache dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            /var/cache/apt/archives
-          key: ${{ runner.os }}-deps-manifests-${{ hashFiles('.github/workflows/build-iso.yml') }}
-          restore-keys: |
-            ${{ runner.os }}-deps-manifests-
-
-      - name: Compute date tag
-        run: echo "DATE_TAG=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
-
-      - name: Install Podman and Skopeo
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y podman skopeo
-
-      - name: Login to GHCR
-        run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | podman login ghcr.io -u ${{ github.actor }} --password-stdin
-
-      - name: Create manifest lists
-        run: |
-          podman manifest create $IMAGE:${TAG}
-          for ARCH in $ARCH_LIST; do
-            podman manifest add $IMAGE:${TAG} docker://$IMAGE:${TAG}-$ARCH
-          done
-
-          podman manifest create $IMAGE:${TAG}-${DATE_TAG}
-          for ARCH in $ARCH_LIST; do
-            podman manifest add $IMAGE:${TAG}-${DATE_TAG} docker://$IMAGE:${TAG}-${DATE_TAG}-$ARCH
-          done
-
-          podman manifest create $IMAGE:latest
-          for ARCH in $ARCH_LIST; do
-            podman manifest add $IMAGE:latest docker://$IMAGE:latest-$ARCH
-          done
-
-      - name: Push manifest lists
-        run: |
-          podman manifest push --all $IMAGE:${TAG} docker://$IMAGE:${TAG}
-          podman manifest push --all $IMAGE:${TAG}-${DATE_TAG} docker://$IMAGE:${TAG}-${DATE_TAG}
-          podman manifest push --all $IMAGE:latest docker://$IMAGE:latest
-
-      - name: Get manifest digests
-        run: |
-          DIGEST_TAG=$(skopeo inspect docker://$IMAGE:${TAG} --format "{{.Digest}}")
-          DIGEST_DATE_TAG=$(skopeo inspect docker://$IMAGE:${TAG}-${DATE_TAG} --format "{{.Digest}}")
-          DIGEST_LATEST=$(skopeo inspect docker://$IMAGE:latest --format "{{.Digest}}")
-          echo "DIGEST_TAG=$DIGEST_TAG" >> $GITHUB_ENV
-          echo "DIGEST_DATE_TAG=$DIGEST_DATE_TAG" >> $GITHUB_ENV
-          echo "DIGEST_LATEST=$DIGEST_LATEST" >> $GITHUB_ENV
-
-      - name: Install Cosign
-        uses: sigstore/cosign-installer@v3.5.0
-
-      - name: Cosign sign images (keyless with GHCR auth)
-        env:
-          COSIGN_EXPERIMENTAL: "1"
-        run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | cosign login ghcr.io -u ${{ github.actor }} --password-stdin
-          cosign sign --yes --recursive $IMAGE@$DIGEST_TAG
-          cosign sign --yes --recursive $IMAGE@$DIGEST_DATE_TAG
-          cosign sign --yes --recursive $IMAGE@$DIGEST_LATEST
-
-  build-iso:
-    runs-on: ${{ matrix.runner }}
-    needs: create-manifests
-    strategy:
-      matrix:
-        include:
-          - arch: amd64
-            runner: ubuntu-latest
+    needs: validate
     environment: Actions
-    permissions:
-      contents: write
-      packages: write
-      id-token: write
     env:
-      TAG: "43"
+      R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
       R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
       R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-      R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+      R2_BUCKET: ${{ secrets.R2_BUCKET }}
+    permissions: { contents: read, packages: write, id-token: write }
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Free disk space
-        run: |
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf /usr/local/lib/android
-          sudo rm -rf /opt/ghc
-          sudo rm -rf /usr/local/share/boost
-          sudo rm -rf $AGENT_TOOLSDIRECTORY
-
-      - name: Set image name
-        run: echo "IMAGE=ghcr.io/$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')/chelipeds" >> $GITHUB_ENV
-
-      - name: Cache dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            /var/cache/apt/archives
-            /var/lib/containers/storage
-          key: ${{ runner.os }}-deps-iso-${{ hashFiles('Containerfile', '.github/workflows/build-iso.yml') }}
-          restore-keys: |
-            ${{ runner.os }}-deps-iso-
-
+      - uses: actions/checkout@v5
       - name: Install Podman
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y podman
-
+        run: sudo apt-get update && sudo apt-get install -y podman
       - name: Login to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | podman login ghcr.io -u "${{ github.actor }}" --password-stdin
+      - name: Build and push image
         run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | sudo podman login ghcr.io -u ${{ github.actor }} --password-stdin
-
-      - name: Pull target image
-        run: |
-          sudo podman pull $IMAGE:${TAG}-${{ matrix.arch }}
-
-      - name: Build bootable ISO (${{ matrix.arch }})
+          image=$(echo "$IMAGE" | tr '[:upper:]' '[:lower:]')
+          podman build -t "$image:$TAG" -t "$image:latest" .
+          podman push "$image:$TAG"
+          podman push "$image:latest"
+      - name: Build bootable ISO
         run: |
           mkdir -p output
-          echo "Starting bootc-image-builder with image: $IMAGE:${TAG}-${{ matrix.arch }}"
-          echo "Output directory: ${{ github.workspace }}/output"
-
-          sudo podman run --privileged --rm \
+          image=$(echo "$IMAGE" | tr '[:upper:]' '[:lower:]')
+          echo "${{ secrets.GITHUB_TOKEN }}" | sudo podman login ghcr.io -u "${{ github.actor }}" --password-stdin
+          sudo podman pull "$image:$TAG"
+          sudo podman run --privileged --rm --security-opt label=disable \
             -v /var/lib/containers/storage:/var/lib/containers/storage \
-            -v ${{ github.workspace }}/output:/output \
-            --security-opt label=disable \
+            -v "$PWD/output:/output" \
             quay.io/centos-bootc/bootc-image-builder:latest \
-            --type iso \
-            --rootfs ext4 \
-            $IMAGE:${TAG}-${{ matrix.arch }} || {
-              echo "bootc-image-builder failed with exit code $?"
-              ls -la ${{ github.workspace }}/output/ || true
-              exit 1
-            }
-
-          sudo chown -R $(id -u):$(id -g) ${{ github.workspace }}/output || true
-          ls -la ${{ github.workspace }}/output/
-
-      - name: Install Cosign
-        uses: sigstore/cosign-installer@v3.5.0
-
-      - name: Locate ISO artifacts
-        id: locate_iso
+            --type iso --rootfs ext4 --output /output "$image:$TAG"
+      - uses: actions/upload-artifact@v6
+        with:
+          name: chelipeds-iso-fedora-44
+          path: output/**/*.iso
+      - name: Prepare ISO checksums
         run: |
-          ISO_LIST=$(find output -maxdepth 5 -type f -name '*.iso' -print | sort)
-          [ -z "$ISO_LIST" ] && { echo "No ISO found"; exit 1; }
-          echo "$ISO_LIST" > output/iso-files.txt
-          echo "iso_list_file=output/iso-files.txt" >> "$GITHUB_OUTPUT"
-
-      - name: Cosign sign ISO
+          sudo chown -R "$(id -u):$(id -g)" output
+          iso=$(find output -type f -name '*.iso' -print -quit)
+          test -n "$iso"
+          sha256sum "$iso" > "$iso.sha256"
+          echo "ISO=$iso" >> "$GITHUB_ENV"
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3.9.0
+      - name: Sign ISO
         env:
           COSIGN_EXPERIMENTAL: "1"
-        run: |
-          ISO_LIST_FILE="${{ steps.locate_iso.outputs.iso_list_file }}"
-          while IFS= read -r ISO; do
-            [ -z "$ISO" ] && continue
-            SIG="${ISO}.sig"
-            cosign sign-blob --yes "$ISO" --output-signature "$SIG"
-          done < "$ISO_LIST_FILE"
-
-      - name: Upload ISO + signature
-        uses: actions/upload-artifact@v4
-        with:
-          name: chelipeds-iso-43-${{ matrix.arch }}
-          path: |
-            output/**/*.iso
-            output/**/*.iso.sig
-
-      - name: Verify R2 Secrets for Upload
-        run: |
-          for var in R2_ACCESS_KEY_ID R2_SECRET_ACCESS_KEY R2_ACCOUNT_ID; do
-            if [ -z "${!var}" ]; then
-              echo "::error::$var is not set."
-              exit 1
-            fi
-          done
-
-      - name: Install rclone
-        run: curl https://rclone.org/install.sh | sudo bash
+        run: cosign sign-blob --yes "$ISO" --output-signature "$ISO.sig"
       - name: Upload ISO to Cloudflare R2
-        if: ${{ env.R2_ACCESS_KEY_ID != '' && env.R2_SECRET_ACCESS_KEY != '' && env.R2_ACCOUNT_ID != '' }}
         env:
           RCLONE_CONFIG_R2_TYPE: s3
           RCLONE_CONFIG_R2_PROVIDER: Cloudflare
@@ -267,41 +86,42 @@ jobs:
           RCLONE_CONFIG_R2_ENDPOINT: https://${{ env.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
           RCLONE_CONFIG_R2_NO_CHECK_BUCKET: "true"
           RCLONE_CONFIG_R2_FORCE_PATH_STYLE: "true"
-          R2_BUCKET: chelipeds
         run: |
-          set -euo pipefail
+          for name in R2_ACCOUNT_ID R2_ACCESS_KEY_ID R2_SECRET_ACCESS_KEY R2_BUCKET; do
+            test -n "${!name}" || { echo "Missing $name" >&2; exit 1; }
+          done
+          curl -fsSL https://rclone.org/install.sh | sudo bash
+          rclone copyto --s3-no-check-bucket "$ISO" "r2:${R2_BUCKET}/iso/$(basename "$ISO")"
+          rclone copyto --s3-no-check-bucket "$ISO.sha256" "r2:${R2_BUCKET}/iso/$(basename "$ISO").sha256"
+          rclone copyto --s3-no-check-bucket "$ISO.sig" "r2:${R2_BUCKET}/iso/$(basename "$ISO").sig"
+      - name: Upload signed release assets
+        uses: actions/upload-artifact@v6
+        with:
+          name: chelipeds-iso-release-assets
+          path: |
+            ${{ env.ISO }}
+            ${{ env.ISO }}.sha256
+            ${{ env.ISO }}.sig
 
-          ISO_LIST_FILE="${{ steps.locate_iso.outputs.iso_list_file }}"
-          if [ -z "${ISO_LIST_FILE:-}" ] || [ ! -f "$ISO_LIST_FILE" ]; then
-            echo "ISO list file missing; expected path: $ISO_LIST_FILE"
-            exit 1
-          fi
-
-          # Optional: confirm bucket exists (will 403 if it doesn't)
-          # rclone lsd "r2:${R2_BUCKET}" || { echo "Bucket ${R2_BUCKET} not found in this account. Create it first in Cloudflare R2."; exit 1; }
-
-          uploaded=0
-          while IFS= read -r ISO; do
-            [ -z "$ISO" ] && continue
-            [ -f "$ISO" ] || { echo "ISO file '$ISO' not found"; exit 1; }
-
-            SIG="${ISO}.sig"
-            [ -f "$SIG" ] || { echo "Signature file '$SIG' not found"; exit 1; }
-
-            BASENAME="chelipeds-${TAG}-${{ matrix.arch }}.iso"
-            SIG_BASENAME="chelipeds-${TAG}-${{ matrix.arch }}.iso.sig"
-
-
-            echo "Uploading $ISO to r2:${R2_BUCKET}/$BASENAME"
-            rclone copyto --s3-no-check-bucket "$ISO" "r2:${R2_BUCKET}/$BASENAME"
-
-            echo "Uploading $SIG to r2:${R2_BUCKET}/$SIG_BASENAME"
-            rclone copyto --s3-no-check-bucket "$SIG" "r2:${R2_BUCKET}/$SIG_BASENAME"
-
-            uploaded=$((uploaded + 1))
-          done < "$ISO_LIST_FILE"
-
-          if [ "$uploaded" -eq 0 ]; then
-            echo "No ISO entries processed; aborting"
-            exit 1
-          fi
+  release:
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository history
+        uses: actions/checkout@v5
+      - name: Download signed release assets
+        uses: actions/download-artifact@v6
+        with:
+          name: chelipeds-iso-release-assets
+          path: release-assets
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "iso-44-${{ github.run_number }}" \
+            release-assets/install.iso.sha256 release-assets/install.iso.sig \
+            --title "Chelipeds Fedora 44 ISO ${{ github.run_number }}" \
+            --notes "The ISO is uploaded to Cloudflare R2. Download it from the configured R2 ISO endpoint and verify it with the attached SHA-256 checksum and Cosign signature." \
+            --generate-notes

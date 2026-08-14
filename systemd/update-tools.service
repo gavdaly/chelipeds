@@ -1,0 +1,5 @@
+[Unit]
+Description=Update Chelipeds developer tools
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/update-tools.sh

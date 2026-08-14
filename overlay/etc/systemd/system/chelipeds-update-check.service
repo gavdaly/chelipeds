@@ -1,5 +1,5 @@
 [Unit]
-Description=Check for rpm-ostree updates and set flag
+Description=Check for bootc updates and set flag
 
 [Service]
 Type=oneshot

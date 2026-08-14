@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -euo pipefail
+if [[ ! -x /root/.volta/bin/codex ]]; then volta install @openai/codex-cli; fi
+exec /root/.volta/bin/codex "$@"

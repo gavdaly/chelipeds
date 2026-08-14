@@ -1,0 +1,10 @@
+[Unit]
+Description=Notify user about staged Chelipeds updates
+After=graphical-session.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/notify-update-on-login.sh
+
+[Install]
+WantedBy=default.target

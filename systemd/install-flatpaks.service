@@ -1,0 +1,9 @@
+[Unit]
+Description=Install Chelipeds desktop Flatpaks
+After=network-online.target
+Wants=network-online.target
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/install-flatpaks.sh
+[Install]
+WantedBy=multi-user.target

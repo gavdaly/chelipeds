@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Grok Build's official installer is documented at https://grok.com/build.
+install_path="$HOME/.local/bin/grok"
+if [[ ! -x "$install_path" ]]; then
+  command -v curl >/dev/null || { echo "curl is required to install Grok Build" >&2; exit 127; }
+  curl -fsSL https://x.ai/cli/install.sh | bash
+fi
+
+[[ -x "$install_path" ]] || { echo "Grok Build was not found at $install_path" >&2; exit 1; }
+exec "$install_path" "$@"

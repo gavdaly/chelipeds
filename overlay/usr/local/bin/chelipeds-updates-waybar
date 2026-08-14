@@ -2,7 +2,7 @@
 set -euo pipefail
 FLAG="/var/lib/chelipeds/updates-available"
 if [ -f "$FLAG" ]; then
-  echo '{"text":"⬆ updates","tooltip":"System updates available (rpm-ostree)","class":"warn"}'
+  echo '{"text":"⬆ updates","tooltip":"A bootc system update is staged","class":"warn"}'
   exit 0
 fi
 if [ -f /var/lib/chelipeds/upgrade-check.txt ]; then

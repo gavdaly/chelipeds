@@ -1,0 +1,8 @@
+[Unit]
+Description=Lock screen before suspend
+Before=sleep.target
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/swaylock -f -c 1A1410 --effect-blur 7x5 --clock
+[Install]
+WantedBy=sleep.target

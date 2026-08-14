@@ -1,5 +1,5 @@
 [Unit]
-Description=Check for rpm-ostree updates every 15 minutes (sets CHELIPEDS_UPDATES_AVAILABLE)
+Description=Check for bootc updates every 15 minutes
 
 [Timer]
 OnCalendar=*:0/15

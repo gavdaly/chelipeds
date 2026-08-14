@@ -1,17 +1,22 @@
-# Chelipeds — Fedora 43 Hyprland Dev ISO
+# Chelipeds — Fedora 44 bootc Dev Image
 
 ![crab typing](cheliped_cover.avif)
 
-Custom rpm-ostree image with Niri + dev tooling.
+Custom Fedora bootc image with Niri, developer tooling, and a warm dark `chelipeds` theme.
 
 ## What you get
 
-- Niri, Waybar, Wofi, MakO notifications
-- Dev stack: gcc/clang/cmake/ninja/neovim/git
+- Niri, Waybar, Wofi, Mako notifications, screenshots, recording, OCR, and clipboard history
+- Dev stack runs inside the `dev` Distrobox: gcc/clang/cmake/ninja/neovim/git and terminal tooling
 - Containers: podman/buildah/skopeo/toolbox/distrobox
-- Terminals: Kitty
+- Terminals: Ghostty (primary), Kitty (fallback), and Zellij; all automatically enter the `dev` Distrobox
 - Flatpak + Flathub
-- Flatpaks preinstalled: Chromium, Zed
+- Flatpaks installed on first boot: Chromium, Zed, Obsidian, Typora, and Font Downloader
+- Dictation with Voxtype using Parakeet TDT v2, plus lazy-installed AI CLIs: Claude, Codex, Gemini, Grok Build, Antigravity, and Kimi Code
+
+Terminal sessions are intentionally isolated from the immutable host. The first terminal launch creates an Ubuntu 24.04 `dev` Distrobox and installs the terminal/development baseline there. Host-level commands are limited to graphical, Wayland, systemd, and bootc integration tools.
+
+Node.js is managed with `mise` inside Distrobox. It handles Node, Python, Rust, and project-local CLI versions in one toolchain, replacing the earlier host-level Volta setup. Voxtype is configured for local Parakeet TDT v2; run `setup-voxtype-parakeet.sh` once after installation to download its model.
 
 ## Paths
 
@@ -34,10 +39,11 @@ https://<CF_R2_PUBLIC_HOST>/iso/chelipeds-hyperland-dev-.sha256
 
 ## Local build (optional)
 
-Requires Linux with podman + CoreOS Assembler tools.
+Requires Linux with Podman. The image build uses Fedora bootc; ISO generation uses `bootc-image-builder`.
 
 ```bash
-./scripts/build-local.sh
+podman build -t chelipeds:dev .
+podman run --rm chelipeds:dev bootc status
 ```
 
 ## Distro Layout
@@ -45,7 +51,7 @@ Requires Linux with podman + CoreOS Assembler tools.
 ### User Projects & Workflows
 
 - Codebases: Rust, Node.js, Python, C/C++
-- AI workflows: Claude, Gemini, Codex CLIs
+- AI workflows: Claude, Gemini, Codex, Grok Build, Antigravity, and Kimi Code CLIs
 
 ### Toolchains & CLIs
 
@@ -72,8 +78,11 @@ Requires Linux with podman + CoreOS Assembler tools.
 
 ### Automation & Maintenance (systemd timers)
 
-- 03:00 daily: update-tools.sh (Rust, Node, Python, CLIs)
-- 03:15 daily: rpm-ostree upgrade (immutable OS updates)
+- 03:00 daily: `update-tools.sh` (Rust, Node, Python, and user-space tools)
+- bootc update checks run periodically and stage an image update when available.
+- On graphical login, Chelipeds notifies the user when an update has been staged. It never reboots automatically.
+
+To apply a staged image update, run `sudo bootc upgrade` and reboot when convenient.
 
 ### Networking, Access, and Security │
 

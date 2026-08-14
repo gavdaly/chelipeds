@@ -13,3 +13,23 @@ The `overlay/` directory allows you to override or add files to the system. Any 
 *   Adding or overriding systemd units.
 
 By using the `Containerfile` and the `overlay/` directory, you can create a fully customized version of Chelipeds that meets your specific needs.
+## Installer user configuration
+
+`bootc-config.json` intentionally contains an empty user list. Do not commit a real password hash or SSH private material. Before generating an installed system, provide the target account through the bootc installer’s Anaconda/kickstart or filesystem-install configuration:
+
+```json
+{
+  "blueprint": {
+    "customizations": {
+      "user": [{
+        "name": "youruser",
+        "password": "<yescrypt-password-hash>",
+        "key": "ssh-ed25519 AAAA...",
+        "groups": ["wheel"]
+      }]
+    }
+  }
+}
+```
+
+Use a deployment-specific file or secret substitution for these values. The repository template remains credential-free.
