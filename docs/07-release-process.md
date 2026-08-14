@@ -2,5 +2,6 @@
 - **ISOs**: Generated with `bootc-image-builder` and uploaded as workflow artifacts.
 - **Configuration**: `bootc-config.json` is the installer customization template; provide a real user and SSH key at deployment time.
 - **Updates**: Delivered as bootc image upgrades. The system checks periodically, stages available updates, and notifies the user at graphical login.
-- **Release validation**: Run `bash -n scripts/*.sh`, `git diff --check`, `podman build -t chelipeds:dev .`, and `podman run --rm chelipeds:dev bootc status`.
+- **Release validation**: Run `bash -n scripts/*.sh`, `git diff --check`, build the Parakeet-enabled `voxtype-bin`, then run `podman build -t chelipeds:dev .` and `podman run --rm chelipeds:dev bootc status`.
+- **CI parallelism**: GitHub Actions compiles Voxtype in a parallel job, caches Cargo dependencies and build output, and passes the resulting binary to the image job as an artifact. Branches publish only branch/commit image tags; R2 and releases run only from `main`.
 - **Artifacts**: CI signs the ISO with Cosign, uploads the ISO/checksum/signature to R2, and creates a versioned GitHub release.

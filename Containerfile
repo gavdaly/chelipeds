@@ -1,11 +1,4 @@
 # syntax=docker/dockerfile:1
-FROM quay.io/fedora/fedora-bootc:44 AS voxtype-builder
-RUN dnf -y install cargo rust alsa-lib-devel clang-devel cmake openssl-devel pkgconf-pkg-config wtype wl-clipboard git && dnf clean all
-ENV CARGO_HOME=/var/tmp/chelipeds-cargo
-RUN mkdir -p "$CARGO_HOME" /usr/local/bin \
-  && cargo install --root /usr/local --git https://github.com/peteonrails/voxtype.git --tag v0.7.5 voxtype --features parakeet \
-  && test -x /usr/local/bin/voxtype
-
 FROM quay.io/fedora/fedora-bootc:44
 LABEL org.opencontainers.image.title="Chelipeds (Niri Dev)" org.opencontainers.image.version="44"
 RUN dnf -y upgrade \
@@ -18,7 +11,7 @@ RUN dnf -y upgrade \
   google-noto-sans-fonts google-noto-sans-cjk-fonts google-noto-emoji-fonts \
   && find /etc/yum.repos.d /etc/dnf -type f -exec grep -Il 'fyralabs\|terra' {} + 2>/dev/null | xargs -r rm -f \
   && dnf clean all
-COPY --from=voxtype-builder /usr/local/bin/voxtype /usr/local/bin/voxtype
+COPY voxtype-bin /usr/local/bin/voxtype
 COPY overlay/ /
 COPY config/ /etc/skel/.config/
 COPY scripts/ /usr/local/bin/

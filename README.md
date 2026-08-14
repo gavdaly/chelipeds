@@ -42,6 +42,9 @@ https://<CF_R2_PUBLIC_HOST>/iso/chelipeds-hyperland-dev-.sha256
 Requires Linux with Podman. The image build uses Fedora bootc; ISO generation uses `bootc-image-builder`.
 
 ```bash
+# The image expects the Parakeet-enabled Voxtype binary in the build context.
+cargo install --root "$PWD/voxtype-root" --git https://github.com/peteonrails/voxtype.git --tag v0.7.5 voxtype --features parakeet
+cp voxtype-root/bin/voxtype voxtype-bin
 podman build -t chelipeds:dev .
 podman run --rm chelipeds:dev bootc status
 ```
