@@ -114,7 +114,7 @@ jobs:
           cp voxtype-root/bin/voxtype voxtype-bin
       - name: Verify cached or compiled Voxtype
         run: test -x voxtype-bin
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: voxtype-v0.7.5-parakeet
           path: voxtype-bin
@@ -125,7 +125,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - name: Download cached Voxtype binary
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v8
         with:
           name: voxtype-v0.7.5-parakeet
           path: .
@@ -200,7 +200,7 @@ jobs:
             -v "$PWD/output:/output" \
             quay.io/centos-bootc/bootc-image-builder:latest \
             --type iso --rootfs ext4 --output /output "$image:$branch_tag"
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: chelipeds-iso-fedora-44
           path: output/**/*.iso
@@ -218,7 +218,7 @@ jobs:
           COSIGN_EXPERIMENTAL: "1"
         run: cosign sign-blob --yes "$ISO" --output-signature "$ISO.sig"
       - name: Upload signed release assets
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: chelipeds-iso-release-assets
           path: |
@@ -231,7 +231,7 @@ jobs:
     needs: build-iso
     permissions: { contents: read }
     steps:
-      - uses: actions/download-artifact@v6
+      - uses: actions/download-artifact@v8
         with:
           name: chelipeds-iso-release-assets
           path: release-assets
@@ -258,7 +258,7 @@ jobs:
       R2_BUCKET: ${{ secrets.R2_BUCKET }}
     steps:
       - name: Download signed release assets
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v8
         with:
           name: chelipeds-iso-release-assets
           path: release-assets
@@ -296,7 +296,7 @@ jobs:
       - name: Checkout repository history
         uses: actions/checkout@v5
       - name: Download signed release assets
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v8
         with:
           name: chelipeds-iso-release-assets
           path: release-assets
