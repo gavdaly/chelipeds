@@ -16,6 +16,7 @@ RUN dnf -y upgrade \
   podman podman-compose buildah skopeo crun toolbox distrobox \
   mosh tailscale selinux-policy-targeted firewalld flatpak curl wget jq rsync chezmoi openssh-server NetworkManager-tui bluez blueman gnome-keyring lxqt-policykit \
   google-noto-sans-fonts google-noto-sans-cjk-fonts google-noto-emoji-fonts \
+  && find /etc/yum.repos.d /etc/dnf -type f -exec grep -Il 'fyralabs\|terra' {} + 2>/dev/null | xargs -r rm -f \
   && dnf clean all
 COPY --from=voxtype-builder /usr/local/bin/voxtype /usr/local/bin/voxtype
 COPY overlay/ /
