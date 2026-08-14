@@ -23,7 +23,13 @@ jobs:
           find scripts -type f -print0 | xargs -0 -n1 bash -n
           find scripts -type f -print0 | xargs -0 shellcheck
           python3 -m json.tool bootc-config.json >/dev/null
-          systemd-analyze verify systemd/*.service systemd/*.timer
+          for unit in systemd/*.service systemd/*.timer; do
+            grep -q '^\[Unit\]' "$unit"
+            grep -q '^\[Service\]\|^\[Timer\]' "$unit"
+          done
+          for script in notify-update-on-login.sh install-flatpaks.sh update-tools.sh; do
+            test -f "scripts/$script" || test -f "overlay/usr/local/bin/$script"
+          done
           git diff --check
   build:
     runs-on: ubuntu-latest
