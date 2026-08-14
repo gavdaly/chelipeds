@@ -1,6 +1,6 @@
 binds {
-  Mod+Return { spawn "ghostty" }
-  Mod+Alt+Return { spawn "ghostty" "-e" "/usr/local/bin/distrobox-shell.sh" "zellij" "attach" "dev" "--create" }
+  Mod+Return { spawn "kitty" }
+  Mod+Alt+Return { spawn "kitty" "zellij" "attach" "dev" "--create" }
   Mod+Shift+L { spawn "swaylock" "-f" "-c" "1A1410" "--effect-blur" "7x5" "--clock" "--indicator" }
   Mod+Shift+S { spawn "sh" "-c" "grim -g \"$(slurp)\" - | wl-copy" }
   Mod+Ctrl+S { spawn "sh" "-c" "mkdir -p ~/Pictures; grim -g \"$(slurp)\" ~/Pictures/screenshot-$(date +%Y%m%d-%H%M%S).png" }
