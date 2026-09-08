@@ -7,16 +7,17 @@ Custom Fedora bootc image with Niri, developer tooling, and a warm dark `chelipe
 ## What you get
 
 - Niri, Waybar, Wofi, Mako notifications, screenshots, recording, OCR, and clipboard history
-- Dev stack runs inside the `dev` Distrobox: gcc/clang/cmake/ninja/neovim/git and terminal tooling
+- Dev tooling runs on the host: rustup/cargo, uv, Volta/Node, plus a curated set of CLIs
+- Multiple ecosystems (`ecosystem-shell.sh`): `arch` Distrobox (pacman) and the `fedora` host shell; project work happens in per-project dev containers
 - Containers: podman/buildah/skopeo/toolbox/distrobox
-- Terminals: Kitty and Zellij; all automatically enter the `dev` Distrobox
+- Terminals: Kitty and Zellij on the host by default; `Mod+Shift+Return` picks an ecosystem
 - Flatpak + Flathub
 - Flatpaks installed on first boot: Chromium, Zed, Obsidian, Typora, and Font Downloader
 - Dictation with Voxtype using Parakeet TDT v2, plus lazy-installed AI CLIs: Claude, Codex, Gemini, Grok Build, Antigravity, and Kimi Code
 
-Terminal sessions are intentionally isolated from the immutable host. The first terminal launch creates an Ubuntu 24.04 `dev` Distrobox and installs the terminal/development baseline there. Host-level commands are limited to graphical, Wayland, systemd, and bootc integration tools.
+Terminal sessions run on the immutable host; development toolchains are installed per-user and never modify the bootc image. Graphical, Wayland, and systemd integration stay host-level, while project-specific environments live in dev containers.
 
-Node.js is managed with `mise` inside Distrobox. It handles Node, Python, Rust, and project-local CLI versions in one toolchain, replacing the earlier host-level Volta setup. Voxtype is configured for local Parakeet TDT v2; run `setup-voxtype-parakeet.sh` once after installation to download its model.
+Node.js is managed with `volta`, Python with `uv`, and Rust with `rustup`, all in user space. Voxtype is configured for local Parakeet TDT v2; run `setup-voxtype-parakeet.sh` once after installation to download its model.
 
 ## Paths
 
@@ -78,6 +79,7 @@ podman run --rm chelipeds:dev bootc status
 
 - Podman, podman-compose, podman-tui, buildah, skopeo, crun
 - Toolbox, Distrobox
+- Arch Linux Distrobox (`ecosystem-shell.sh arch`) on the immutable host. Nix stays user-managed. Project work happens in per-project dev containers. See `docs/16-ecosystems.md`.
 
 ### Automation & Maintenance (systemd timers)
 
