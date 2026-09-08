@@ -6,7 +6,7 @@ RUN dnf -y upgrade \
   niri waybar wofi mako swaylock greetd tuigreet grim slurp wl-clipboard wf-recorder cliphist tesseract tesseract-langpack-eng wtype libnotify \
   xdg-desktop-portal-wlr xdg-desktop-portal-gtk kitty jetbrains-mono-fonts \
   podman podman-compose buildah skopeo crun toolbox distrobox \
-  mosh selinux-policy-targeted firewalld flatpak curl wget jq rsync chezmoi openssh-server NetworkManager-tui bluez blueman gnome-keyring lxqt-policykit \
+  mosh selinux-policy-targeted firewalld flatpak curl wget jq rsync chezmoi openssh-server NetworkManager-tui bluez blueman gnome-keyring lxqt-policykit bcachefs-tools \
   google-noto-sans-fonts google-noto-sans-cjk-fonts google-noto-emoji-fonts \
   && dnf clean all
 COPY voxtype-bin /usr/local/bin/voxtype

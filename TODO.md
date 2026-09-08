@@ -32,3 +32,7 @@ This file tracks the installation of optional applications in userspace. These a
 - [x] PulseAudio Volume Control (`org.pulseaudio.pavucontrol`)
 - [x] Helvum (`org.pipewire.Helvum`)
 - [x] Syncthing-GTK (`me.kozec.syncthingtk`)
+
+## Post-install storage
+
+- [ ] Optional Bcachefs data volume mounted at `/data` (explicit device selection; leave the bootc root filesystem unchanged)
