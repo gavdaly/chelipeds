@@ -217,9 +217,8 @@ jobs:
             --security-opt apparmor=unconfined \
             -v /var/lib/containers/storage:/var/lib/containers/storage \
             -v "$PWD/output:/output" \
-            ghcr.io/osbuild/image-builder-cli:latest \
-            build --bootc-ref "$image:$branch_tag" \
-            --bootc-default-fs ext4 --output-dir /output iso
+            quay.io/centos-bootc/bootc-image-builder:latest \
+            --type iso --rootfs ext4 --output /output "$image:$branch_tag"
       - uses: actions/upload-artifact@v7
         with:
           name: chelipeds-iso-fedora-44
