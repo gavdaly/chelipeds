@@ -190,7 +190,9 @@ jobs:
           fi
 
   build-iso:
-    runs-on: ubuntu-latest
+    # osbuild performs nested mounts; keep this on the known-compatible runner
+    # while ubuntu-latest transitions from 24.04 to 26.04.
+    runs-on: ubuntu-24.04
     needs: build-image
     if: github.ref == 'refs/heads/main'
     permissions: { contents: read, id-token: write }
