@@ -212,7 +212,7 @@ jobs:
           mkdir -p output
           image=$(echo "$IMAGE" | tr '[:upper:]' '[:lower:]')
           branch_tag=$(echo "$BRANCH_TAG" | tr '/_' '--' | tr -cd '[:alnum:].-')
-          sudo podman run --privileged --rm \
+          sudo podman run --privileged --rm --userns=host \
             --security-opt label=type:unconfined_t \
             --security-opt apparmor=unconfined \
             -v /var/lib/containers/storage:/var/lib/containers/storage \
